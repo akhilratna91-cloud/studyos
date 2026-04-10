@@ -1,0 +1,11 @@
+node_modules
+coverage
+.git
+.next
+frontend/node_modules
+frontend/.next
+*.log
+.env
+test_output.txt
+test_stderr.txt
+test_utf8.txt
