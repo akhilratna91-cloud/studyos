@@ -937,3 +937,22 @@ export async function getQuizStats(token: string) {
 
   return response.data.stats;
 }
+
+export async function demoLogin() {
+  const response = await apiRequest<
+    WrappedResponse<{
+      user: RawUser;
+      profile?: RawProfile;
+      accessToken: string;
+      refreshToken: string;
+    }>
+  >("/auth/demo", {
+    method: "POST",
+  });
+
+  return {
+    user: normalizeUser(response.data.user, response.data.profile),
+    accessToken: response.data.accessToken,
+    refreshToken: response.data.refreshToken,
+  } satisfies AuthResult;
+}

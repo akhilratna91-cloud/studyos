@@ -22,6 +22,7 @@ router.post('/register',        registerRules,       validate, authController.re
 router.post('/login',           loginRules,          validate, authController.login);
 router.post('/google',          googleLoginRules,    validate, authController.googleLogin);
 router.post('/refresh',         refreshRules,        validate, authController.refresh);
+router.post('/demo',            authController.demoLogin);  // No-auth demo login
 
 // ─── Protected Routes ───────────────────────────────────────────────────────────
 router.post('/change-password', protect, changePasswordRules, validate, authController.changePassword);

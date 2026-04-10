@@ -130,6 +130,57 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @route   POST /api/v1/auth/demo
+ * @desc    Auto-login as demo user (no credentials needed)
+ * @access  Public
+ */
+const demoLogin = asyncHandler(async (req, res) => {
+  const User = require('../user/user.model');
+  const TokenService = require('../../shared/services/token.service');
+
+  const DEMO_EMAIL = 'demo@studyos.app';
+
+  let user = await User.findOne({ email: DEMO_EMAIL });
+
+  if (!user) {
+    user = await User.create({
+      email: DEMO_EMAIL,
+      class: '12',
+      exam: 'JEE Main',
+      authProvider: 'local',
+      emailVerified: true,
+      password: 'DemoUser@2026!',
+    });
+
+    // Create profile
+    try {
+      const Profile = require('../profile/profile.model');
+      await Profile.create({
+        userId: user._id,
+        displayName: 'Scholar',
+        class: '12',
+        exam: 'JEE Main',
+      });
+    } catch (e) {
+      // ignore if profile already exists
+    }
+  }
+
+  const { accessToken, refreshToken } = TokenService.generateTokenPair(user);
+
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Demo login successful',
+    data: {
+      user,
+      profile: { displayName: 'Scholar' },
+      accessToken,
+      refreshToken,
+    },
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -137,4 +188,5 @@ module.exports = {
   refresh,
   changePassword,
   getMe,
+  demoLogin,
 };

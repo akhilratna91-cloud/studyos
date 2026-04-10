@@ -18,6 +18,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
 import { XpBar } from "@/components/ui/xp-bar";
 import {
+  demoLogin,
   getAnalytics,
   getHealth,
   getMotivation,
@@ -45,6 +46,7 @@ export default function DashboardHome() {
     hasHydrated,
     demoMode,
     setGamification,
+    setSession,
   } = useUserStore();
   const [dashboard, setDashboard] = useState<TodayDashboard>(demoDashboard);
   const [analytics, setAnalytics] = useState<AnalyticsSnapshot>(demoAnalytics);
@@ -66,6 +68,18 @@ export default function DashboardHome() {
 
     async function loadDashboard() {
       try {
+        // Auto-login with demo if no token
+        let activeToken = token;
+        if (!activeToken) {
+          try {
+            const demoResult = await demoLogin();
+            activeToken = demoResult.accessToken;
+            setSession(demoResult);
+          } catch {
+            // Failed to auto-login, continue with demo data
+          }
+        }
+
         const [healthResult, motivationResult] = await Promise.all([
           getHealth(),
           getMotivation(),
@@ -78,10 +92,10 @@ export default function DashboardHome() {
         let nextAnalytics: AnalyticsSnapshot = demoAnalytics;
         let nextStatus = "Demo mode is active. Sign in to sync your real plan and tasks.";
 
-        if (token) {
+        if (activeToken) {
           const [dashboardResult, analyticsResult] = await Promise.all([
-            getTodayDashboard(token),
-            getAnalytics(token),
+            getTodayDashboard(activeToken),
+            getAnalytics(activeToken),
           ]);
 
           nextDashboard = {
@@ -136,7 +150,7 @@ export default function DashboardHome() {
     return () => {
       active = false;
     };
-  }, [token, hasHydrated, setGamification, startTransition]);
+  }, [token, hasHydrated, setGamification, setSession, startTransition]);
 
   const displayName = user?.displayName || user?.email.split("@")[0] || "Scholar";
   const nextWeakTopic = analytics.weak_chapters[0];
