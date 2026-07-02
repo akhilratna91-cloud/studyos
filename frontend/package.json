@@ -19,6 +19,7 @@
     "react-dom": "19.1.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
+    "three": "^0.185.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -27,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.14",
     "tailwindcss": "^4",

@@ -18,6 +18,7 @@ import {
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
 import { XpBar } from "@/components/ui/xp-bar";
+import { ThreeDModel } from "@/components/ui/threed-model";
 import { StatCard } from "@/components/ui/stat-card";
 import { OrbitLoader } from "@/components/ui/orbit-loader";
 import {
@@ -156,51 +157,56 @@ export default function DashboardHome() {
           <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-primary/[0.08] blur-[80px]" />
           <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-accent-cyan/[0.06] blur-[60px]" />
 
-          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl">
-              <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black tracking-tight text-white sm:text-4xl">
-                Welcome back,{" "}
-                <span className="text-gradient-primary">
-                  {user?.displayName || "Scholar"}
+          <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+            {/* Left Column — Text & Progress */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black tracking-tight text-white sm:text-4xl">
+                  Welcome back,{" "}
+                  <span className="text-gradient-primary">
+                    {user?.displayName || "Scholar"}
+                  </span>
+                </h1>
+                <p className="mt-3 text-sm leading-relaxed text-gray-400 italic">
+                  &ldquo;{quote}&rdquo;
+                </p>
+
+                {demoMode && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <NeonButton
+                      variant="outline"
+                      glowColor="primary"
+                      onClick={handleDemoLogin}
+                      loading={demoLoading}
+                    >
+                      <Zap size={14} /> Try Demo
+                    </NeonButton>
+                    <NeonButton
+                      variant="ghost"
+                      glowColor="cyan"
+                      onClick={() => router.push("/profile")}
+                    >
+                      Sign in
+                    </NeonButton>
+                  </div>
+                )}
+              </div>
+
+              <XpBar xp={xp} level={level} />
+            </div>
+
+            {/* Right Column — 3D Globe center panel */}
+            <div className="relative flex h-60 w-full items-center justify-center lg:h-64">
+              <ThreeDModel />
+              
+              {/* Floating API status */}
+              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-base/80 px-3.5 py-1.5 backdrop-blur-md">
+                <div className={`h-1.5 w-1.5 rounded-full ${health ? "bg-accent-emerald shadow-[0_0_6px_rgba(16,185,129,0.6)]" : "bg-accent-red"}`} />
+                <span className="text-[10px] text-gray-400 font-semibold">
+                  {health ? "LIVE LINK" : "OFFLINE"}
                 </span>
-              </h1>
-              <p className="mt-3 text-sm leading-relaxed text-gray-400 italic">
-                &ldquo;{quote}&rdquo;
-              </p>
-
-              {demoMode && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <NeonButton
-                    variant="outline"
-                    glowColor="primary"
-                    onClick={handleDemoLogin}
-                    loading={demoLoading}
-                  >
-                    <Zap size={14} /> Try Demo
-                  </NeonButton>
-                  <NeonButton
-                    variant="ghost"
-                    glowColor="cyan"
-                    onClick={() => router.push("/profile")}
-                  >
-                    Sign in
-                  </NeonButton>
-                </div>
-              )}
+              </div>
             </div>
-
-            {/* API status */}
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2">
-              <div className={`h-2 w-2 rounded-full ${health ? "bg-accent-emerald shadow-[0_0_6px_rgba(16,185,129,0.6)]" : "bg-accent-red"}`} />
-              <span className="text-xs text-gray-400">
-                {health ? "Systems online" : "Connecting..."}
-              </span>
-            </div>
-          </div>
-
-          {/* XP bar */}
-          <div className="relative z-10 mt-6">
-            <XpBar xp={xp} level={level} />
           </div>
         </GlassCard>
       </motion.div>
