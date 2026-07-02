@@ -1,35 +1,72 @@
 "use client";
 
-import { HTMLMotionProps, motion } from "framer-motion";
+import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-interface GlassCardProps extends HTMLMotionProps<"div"> {
-  children: React.ReactNode;
+type CardVariant = "default" | "elevated" | "orbital" | "highlight";
+
+interface GlassCardProps {
+  children: ReactNode;
   className?: string;
-  glowColor?: "primary" | "orange" | "pink" | "cyan";
-  hoverLift?: boolean;
+  variant?: CardVariant;
+  glowColor?: "primary" | "cyan" | "magenta" | "amber" | "emerald" | "red";
+  onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
-export function GlassCard({ children, className, glowColor, hoverLift = true, ...props }: GlassCardProps) {
-  const glowVariants = {
-    primary: "hover:shadow-neon-primary hover:border-primary/50",
-    orange: "hover:shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:border-[#F59E0B]/50",
-    pink: "hover:shadow-[0_0_15px_rgba(236,72,153,0.5)] hover:border-[#EC4899]/50",
-    cyan: "hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] hover:border-[#22D3EE]/50",
+const glowMap: Record<string, string> = {
+  primary: "hover:shadow-neon-primary",
+  cyan: "hover:shadow-neon-cyan",
+  magenta: "hover:shadow-neon-magenta",
+  amber: "hover:shadow-neon-amber",
+  emerald: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]",
+  red: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]",
+};
+
+const borderGlowMap: Record<string, string> = {
+  primary: "hover:border-primary/30",
+  cyan: "hover:border-accent-cyan/30",
+  magenta: "hover:border-accent-magenta/30",
+  amber: "hover:border-accent-amber/30",
+  emerald: "hover:border-accent-emerald/30",
+  red: "hover:border-accent-red/30",
+};
+
+export function GlassCard({
+  children,
+  className,
+  variant = "default",
+  glowColor = "primary",
+  onClick,
+  style,
+}: GlassCardProps) {
+  const baseStyles =
+    "rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl transition-all duration-500";
+
+  const variantStyles: Record<CardVariant, string> = {
+    default: "",
+    elevated:
+      "hover:translate-y-[-4px] hover:bg-white/[0.06]",
+    orbital: "animate-float",
+    highlight: "gradient-border",
   };
 
   return (
-    <motion.div
-      whileHover={hoverLift ? { y: -4 } : {}}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+    <div
       className={cn(
-        "glass-panel transition-all duration-300",
-        glowColor && glowVariants[glowColor],
-        className
+        baseStyles,
+        variantStyles[variant],
+        glowMap[glowColor],
+        borderGlowMap[glowColor],
+        onClick && "cursor-pointer",
+        className,
       )}
-      {...props}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      style={style}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   AlarmClockCheck,
   Brain,
-  CheckCircle2,
   CircleSlash,
   PlayCircle,
   Sparkles,
@@ -13,6 +12,8 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
 import {
   abandonQuizAttempt,
   finishQuizAttempt,
@@ -73,6 +74,7 @@ export default function QuizPage() {
   const [passingScore, setPassingScore] = useState(60);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "mixed">("mixed");
   const [status, setStatus] = useState("Preparing practice cockpit...");
+  const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<QuizSummary | null>(null);
   const [attempt, setAttempt] = useState<QuizAttemptSummary | null>(null);
   const [questions, setQuestions] = useState<QuizSessionQuestion[]>([]);
@@ -87,10 +89,7 @@ export default function QuizPage() {
   const finishingRef = useRef(false);
 
   useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
-
+    if (!hasHydrated) return;
     let active = true;
 
     async function bootstrap() {
@@ -98,14 +97,10 @@ export default function QuizPage() {
         const examList = await listExams();
         const suggestedExam =
           examList.find((exam) =>
-            user?.exam
-              ? exam.name.toLowerCase().includes(user.exam.toLowerCase())
-              : false,
+            user?.exam ? exam.name.toLowerCase().includes(user.exam.toLowerCase()) : false,
           ) || examList[0];
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         startTransition(() => {
           setExams(examList);
@@ -117,105 +112,61 @@ export default function QuizPage() {
           );
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        setStatus(
-          error instanceof Error
-            ? `Practice cockpit failed to boot: ${error.message}`
-            : "Practice cockpit failed to boot.",
-        );
+        if (!active) return;
+        setStatus(error instanceof Error ? `Practice cockpit failed to boot: ${error.message}` : "Practice cockpit failed to boot.");
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
     void bootstrap();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [hasHydrated, token, user, startTransition]);
 
   useEffect(() => {
-    if (!selectedExamSlug) {
-      return;
-    }
-
+    if (!selectedExamSlug) return;
     let active = true;
 
     async function loadSubjects() {
       try {
         const nextSubjects = await listSubjectsByExam(selectedExamSlug);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setSubjects(nextSubjects);
           setSelectedSubjectId(getId(nextSubjects[0]));
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setSubjects([]);
         setSelectedSubjectId("");
-        setStatus(
-          error instanceof Error
-            ? `Subject list failed: ${error.message}`
-            : "Subject list failed.",
-        );
       }
     }
 
     void loadSubjects();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedExamSlug, startTransition]);
 
   useEffect(() => {
-    if (!selectedSubjectId) {
-      return;
-    }
-
+    if (!selectedSubjectId) return;
     let active = true;
 
     async function loadChapters() {
       try {
         const nextChapters = await listChaptersBySubject(selectedSubjectId);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setChapters(nextChapters);
           setSelectedChapterId(getId(nextChapters[0]));
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setChapters([]);
         setSelectedChapterId("");
-        setStatus(
-          error instanceof Error
-            ? `Chapter list failed: ${error.message}`
-            : "Chapter list failed.",
-        );
       }
     }
 
     void loadChapters();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedSubjectId, startTransition]);
 
   useEffect(() => {
@@ -226,7 +177,6 @@ export default function QuizPage() {
     }
 
     const sessionToken: string = token;
-
     let active = true;
 
     async function loadPerformance() {
@@ -235,47 +185,28 @@ export default function QuizPage() {
           getQuizHistory(sessionToken, 6),
           getQuizStats(sessionToken),
         ]);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setHistory(attempts);
           setStats(statsSnapshot);
         });
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        setStatus(
-          error instanceof Error
-            ? `Quiz stats fallback: ${error.message}`
-            : "Quiz stats fallback active.",
-        );
+      } catch {
+        // fallback
       }
     }
 
     void loadPerformance();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [token, startTransition]);
 
   useEffect(() => {
-    if (!attempt || attempt.status !== "in_progress") {
-      return;
-    }
+    if (!attempt || attempt.status !== "in_progress") return;
 
     const timer = window.setInterval(() => {
       setSecondsLeft((current) => Math.max(current - 1, 0));
     }, 1000);
 
-    return () => {
-      window.clearInterval(timer);
-    };
+    return () => window.clearInterval(timer);
   }, [attempt]);
 
   const selectedExam = useMemo(
@@ -286,17 +217,15 @@ export default function QuizPage() {
   const currentQuestion = questions[currentIndex] || null;
 
   const refreshPerformance = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-
-    const [attempts, statsSnapshot] = await Promise.all([
-      getQuizHistory(token, 6),
-      getQuizStats(token),
-    ]);
-
-    setHistory(attempts);
-    setStats(statsSnapshot);
+    if (!token) return;
+    try {
+      const [attempts, statsSnapshot] = await Promise.all([
+        getQuizHistory(token, 6),
+        getQuizStats(token),
+      ]);
+      setHistory(attempts);
+      setStats(statsSnapshot);
+    } catch { /* fallback */ }
   }, [token]);
 
   async function handleGenerate() {
@@ -346,16 +275,12 @@ export default function QuizPage() {
       setStatus(`Quiz launched: ${nextQuiz.title}`);
       finishingRef.current = false;
     } catch (error) {
-      setStatus(
-        error instanceof Error ? error.message : "Quiz generation failed.",
-      );
+      setStatus(error instanceof Error ? error.message : "Quiz generation failed.");
     }
   }
 
   const handleFinish = useCallback(async (message?: string) => {
-    if (!token || !attempt || finishingRef.current) {
-      return;
-    }
+    if (!token || !attempt || finishingRef.current) return;
 
     try {
       finishingRef.current = true;
@@ -366,24 +291,17 @@ export default function QuizPage() {
       setAttempt(finalAttempt);
       setReview(reviewData);
       setSecondsLeft(0);
-      setStatus(
-        message ||
-          `Quiz finished at ${finalAttempt.score}% with ${finalAttempt.correct} correct answers.`,
-      );
+      setStatus(message || `Quiz finished at ${finalAttempt.score}% accuracy.`);
       await refreshPerformance();
     } catch (error) {
-      setStatus(
-        error instanceof Error ? error.message : "Quiz submission failed.",
-      );
+      setStatus(error instanceof Error ? error.message : "Quiz submission failed.");
     } finally {
       finishingRef.current = false;
     }
   }, [attempt, refreshPerformance, token]);
 
   async function handleSubmitCurrent() {
-    if (!token || !attempt || !currentQuestion || selectedAnswer === null) {
-      return;
-    }
+    if (!token || !attempt || !currentQuestion || selectedAnswer === null) return;
 
     try {
       await submitQuizAnswer(token, getId(attempt), {
@@ -405,16 +323,12 @@ export default function QuizPage() {
       questionStartedAtRef.current = Date.now();
       setStatus(`Answer locked. Moving to question ${currentIndex + 2}.`);
     } catch (error) {
-      setStatus(
-        error instanceof Error ? error.message : "Could not record answer.",
-      );
+      setStatus(error instanceof Error ? error.message : "Could not record answer.");
     }
   }
 
   async function handleAbandon() {
-    if (!token || !attempt) {
-      return;
-    }
+    if (!token || !attempt) return;
 
     try {
       const abandoned = await abandonQuizAttempt(token, getId(attempt));
@@ -425,103 +339,91 @@ export default function QuizPage() {
       setStatus("Current quiz attempt was abandoned.");
       await refreshPerformance();
     } catch (error) {
-      setStatus(
-        error instanceof Error ? error.message : "Could not abandon quiz.",
-      );
+      setStatus(error instanceof Error ? error.message : "Could not abandon quiz.");
     }
   }
 
   useEffect(() => {
-    if (secondsLeft !== 0 || !attempt || attempt.status !== "in_progress") {
-      return;
-    }
-
+    if (secondsLeft !== 0 || !attempt || attempt.status !== "in_progress") return;
     void handleFinish("Timer ended. Auto-submitting your attempt.");
   }, [secondsLeft, attempt, handleFinish]);
 
+  if (!hasHydrated || loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <OrbitLoader size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-            Quiz module
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">
-            Live practice cockpit
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
-            {status}
-          </p>
-        </div>
-
-        {!token && (
-          <NeonButton onClick={() => router.push("/profile")}>
-            <Sparkles size={16} />
-            Sign in for quizzes
-          </NeonButton>
-        )}
-      </div>
+      <PageHeader
+        tag="Quiz module"
+        title="Live Practice Cockpit"
+        subtitle={status}
+        action={
+          !token ? (
+            <NeonButton onClick={() => router.push("/profile")}>
+              <Sparkles size={16} /> Sign in for quizzes
+            </NeonButton>
+          ) : undefined
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        {/* Left column */}
         <div className="space-y-6">
           <GlassCard className="p-5">
-            <div className="text-sm font-semibold text-white">Quiz builder</div>
-            <div className="mt-4 grid gap-4">
-              <label className="text-sm text-gray-300">
+            <div className="text-sm font-semibold text-white mb-4">Quiz Builder</div>
+            <div className="space-y-4">
+              <label className="block text-sm text-gray-300">
                 Exam
                 <select
                   value={selectedExamSlug}
-                  onChange={(event) => setSelectedExamSlug(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                  onChange={(e) => setSelectedExamSlug(e.target.value)}
+                  className="select-orbital mt-2"
                 >
                   {exams.map((exam) => (
-                    <option key={exam.slug} value={exam.slug} className="bg-black">
+                    <option key={exam.slug} value={exam.slug} className="bg-surface">
                       {exam.name}
                     </option>
                   ))}
                 </select>
               </label>
 
-              <label className="text-sm text-gray-300">
+              <label className="block text-sm text-gray-300">
                 Subject
                 <select
                   value={selectedSubjectId}
-                  onChange={(event) => setSelectedSubjectId(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                  onChange={(e) => setSelectedSubjectId(e.target.value)}
+                  className="select-orbital mt-2"
                 >
                   {subjects.map((subject) => (
-                    <option
-                      key={getId(subject) || subject.slug}
-                      value={getId(subject)}
-                      className="bg-black"
-                    >
+                    <option key={getId(subject)} value={getId(subject)} className="bg-surface">
                       {subject.name}
                     </option>
                   ))}
                 </select>
               </label>
 
-              <label className="text-sm text-gray-300">
+              <label className="block text-sm text-gray-300">
                 Chapter
                 <select
                   value={selectedChapterId}
-                  onChange={(event) => setSelectedChapterId(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                  onChange={(e) => setSelectedChapterId(e.target.value)}
+                  className="select-orbital mt-2"
                   disabled={mode === "mock"}
                 >
                   {chapters.map((chapter) => (
-                    <option
-                      key={getId(chapter) || chapter.slug}
-                      value={getId(chapter)}
-                      className="bg-black"
-                    >
+                    <option key={getId(chapter)} value={getId(chapter)} className="bg-surface">
                       {chapter.name}
                     </option>
                   ))}
                 </select>
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-2 grid-cols-3">
                 {[
                   { value: "chapter", label: "Chapter" },
                   { value: "subject", label: "Subject" },
@@ -530,13 +432,11 @@ export default function QuizPage() {
                   <button
                     key={item.value}
                     type="button"
-                    onClick={() =>
-                      setMode(item.value as "chapter" | "subject" | "mock")
-                    }
-                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors ${
+                    onClick={() => setMode(item.value as "chapter" | "subject" | "mock")}
+                    className={`rounded-xl border py-2.5 text-xs font-bold transition-all ${
                       mode === item.value
-                        ? "border-primary/30 bg-primary/10 text-primary"
-                        : "border-white/10 bg-white/5 text-gray-300"
+                        ? "border-primary/30 bg-primary/10 text-primary-light"
+                        : "border-white/[0.06] bg-white/[0.02] text-gray-400 hover:text-white"
                     }`}
                   >
                     {item.label}
@@ -545,202 +445,157 @@ export default function QuizPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm text-gray-300">
+                <label className="block text-sm text-gray-300">
                   Question count
                   <input
                     type="number"
                     min={mode === "mock" ? 10 : 1}
                     max={50}
                     value={count}
-                    onChange={(event) => setCount(Number(event.target.value))}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                    onChange={(e) => setCount(Number(e.target.value))}
+                    className="input-orbital mt-2"
                   />
                 </label>
 
-                <label className="text-sm text-gray-300">
-                  Time limit
+                <label className="block text-sm text-gray-300">
+                  Time limit (min)
                   <input
                     type="number"
                     min={5}
                     max={180}
                     value={timeLimitMinutes}
-                    onChange={(event) =>
-                      setTimeLimitMinutes(Number(event.target.value))
-                    }
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                    onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+                    className="input-orbital mt-2"
                   />
                 </label>
 
-                <label className="text-sm text-gray-300">
+                <label className="block text-sm text-gray-300">
                   Difficulty
                   <select
                     value={difficulty}
-                    onChange={(event) =>
-                      setDifficulty(
-                        event.target.value as "easy" | "medium" | "hard" | "mixed",
-                      )
-                    }
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                    onChange={(e) => setDifficulty(e.target.value as "easy" | "medium" | "hard" | "mixed")}
+                    className="select-orbital mt-2"
                     disabled={mode === "mock"}
                   >
-                    <option value="mixed" className="bg-black">
-                      Mixed
-                    </option>
-                    <option value="easy" className="bg-black">
-                      Easy
-                    </option>
-                    <option value="medium" className="bg-black">
-                      Medium
-                    </option>
-                    <option value="hard" className="bg-black">
-                      Hard
-                    </option>
+                    <option value="mixed" className="bg-surface">Mixed</option>
+                    <option value="easy" className="bg-surface">Easy</option>
+                    <option value="medium" className="bg-surface">Medium</option>
+                    <option value="hard" className="bg-surface">Hard</option>
                   </select>
                 </label>
 
-                <label className="text-sm text-gray-300">
-                  Passing score
+                <label className="block text-sm text-gray-300">
+                  Passing score (%)
                   <input
                     type="number"
                     min={0}
                     max={100}
                     value={passingScore}
-                    onChange={(event) => setPassingScore(Number(event.target.value))}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                    onChange={(e) => setPassingScore(Number(e.target.value))}
+                    className="input-orbital mt-2"
                   />
                 </label>
               </div>
 
-              <NeonButton onClick={() => void handleGenerate()}>
-                <PlayCircle size={16} />
-                {isPending ? "Launching..." : "Generate and start"}
+              <NeonButton onClick={() => void handleGenerate()} className="w-full">
+                <PlayCircle size={16} /> {isPending ? "Launching..." : "Launch Quiz"}
               </NeonButton>
             </div>
           </GlassCard>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <GlassCard className="p-5" glowColor="cyan">
-              <div className="flex items-center gap-2 text-sm text-cyan-300">
-                <Brain size={16} />
-                Quiz average
+          <div className="grid gap-4 grid-cols-2">
+            <GlassCard className="p-4 text-center animate-float" glowColor="cyan">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-accent-cyan">
+                <Brain size={14} /> Average Score
               </div>
-              <div className="mt-3 text-3xl font-black text-white">
-                {stats?.avgScore || 0}%
-              </div>
+              <div className="mt-2 text-2xl font-black text-white">{stats?.avgScore || 0}%</div>
             </GlassCard>
-
-            <GlassCard className="p-5" glowColor="orange">
-              <div className="flex items-center gap-2 text-sm text-orange-300">
-                <Trophy size={16} />
-                Accuracy
+            <GlassCard className="p-4 text-center animate-float" style={{ animationDelay: "-3s" }} glowColor="amber">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-accent-amber">
+                <Trophy size={14} /> Accuracy
               </div>
-              <div className="mt-3 text-3xl font-black text-white">
-                {stats?.accuracy || 0}%
-              </div>
+              <div className="mt-2 text-2xl font-black text-white">{stats?.accuracy || 0}%</div>
             </GlassCard>
           </div>
 
           <GlassCard className="p-5">
-            <div className="text-sm font-semibold text-white">Recent attempts</div>
-            <div className="mt-4 space-y-3">
+            <div className="text-sm font-semibold text-white mb-4">Recent Attempts</div>
+            <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
               {history.length ? (
                 history.map((entry) => (
-                  <div
-                    key={getId(entry) || `${entry.startedAt}-${entry.score}`}
-                    className="rounded-2xl border border-white/8 bg-white/4 p-4"
-                  >
-                    <div className="text-sm font-semibold text-white">
-                      {getHistoryTitle(entry)}
+                  <div key={getId(entry)} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 flex justify-between items-center">
+                    <div>
+                      <div className="text-xs font-semibold text-white">{getHistoryTitle(entry)}</div>
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        {entry.correct}/{entry.totalQuestions} correct • {entry.status}
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                        Score {entry.score}%
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                        {entry.correct}/{entry.totalQuestions} correct
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                        {entry.status}
-                      </span>
-                    </div>
+                    <span className="text-sm font-black text-primary-light">{entry.score}%</span>
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-gray-400">
-                  No quiz attempts yet.
-                </div>
+                <div className="text-center text-xs text-gray-500 py-4">No recent attempts.</div>
               )}
             </div>
           </GlassCard>
         </div>
 
+        {/* Right column — Live Quiz / Review */}
         <div className="space-y-6">
           {attempt && attempt.status === "in_progress" && currentQuestion ? (
             <>
               <GlassCard className="p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.25em] text-primary/80">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-light">
                       {quiz?.title || "Live quiz"}
                     </div>
-                    <div className="mt-2 text-2xl font-black text-white">
+                    <h3 className="mt-1 text-lg font-black text-white">
                       Question {currentIndex + 1} of {questions.length}
-                    </div>
+                    </h3>
                   </div>
-                  <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 px-4 py-3 text-orange-300">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide">
-                      <AlarmClockCheck size={14} />
-                      Timer
-                    </div>
-                    <div className="mt-1 text-2xl font-black">
-                      {formatSeconds(secondsLeft)}
-                    </div>
+                  <div className="rounded-xl border border-accent-amber/20 bg-accent-amber/10 px-4 py-2 text-accent-amber flex items-center gap-2">
+                    <AlarmClockCheck size={16} />
+                    <span className="font-mono font-bold">{formatSeconds(secondsLeft)}</span>
                   </div>
                 </div>
               </GlassCard>
 
               <GlassCard className="p-6">
-                <div className="text-sm font-semibold text-cyan-300">
-                  {currentQuestion.subjectName} | {currentQuestion.chapterName}
+                <div className="text-xs text-accent-cyan font-bold mb-3">
+                  {currentQuestion.subjectName} • {currentQuestion.chapterName}
                 </div>
-                <div className="mt-4 text-xl font-bold leading-8 text-white">
+                <p className="text-base font-medium leading-relaxed text-gray-200">
                   {currentQuestion.question}
-                </div>
-                <div className="mt-5 grid gap-3">
+                </p>
+
+                <div className="mt-6 space-y-2">
                   {currentQuestion.options.map((option, index) => {
                     const active = selectedAnswer === index;
-
                     return (
                       <button
-                        key={`${option.label}-${option.text}`}
-                        type="button"
+                        key={index}
                         onClick={() => setSelectedAnswer(index)}
-                        className={`rounded-2xl border p-4 text-left transition-colors ${
+                        className={`w-full rounded-xl border p-4 text-left transition-all ${
                           active
-                            ? "border-primary/30 bg-primary/10"
-                            : "border-white/8 bg-white/4 hover:border-white/15"
+                            ? "border-primary/40 bg-primary/10 text-primary-light"
+                            : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
                         }`}
                       >
-                        <div className="text-sm font-semibold text-white">
-                          {option.label}. {option.text}
-                        </div>
+                        <span className="font-semibold">{option.label}.</span> {option.text}
                       </button>
                     );
                   })}
                 </div>
 
                 {currentQuestion.hint && (
-                  <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-sm text-cyan-100">
-                    Hint: {currentQuestion.hint}
+                  <div className="mt-4 rounded-xl border border-accent-cyan/20 bg-accent-cyan/[0.05] p-4 text-xs text-gray-300">
+                    <span className="font-bold text-accent-cyan">Hint:</span> {currentQuestion.hint}
                   </div>
                 )}
 
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <NeonButton
-                    onClick={() => void handleSubmitCurrent()}
-                    disabled={selectedAnswer === null}
-                  >
-                    <CheckCircle2 size={16} />
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <NeonButton onClick={() => void handleSubmitCurrent()} disabled={selectedAnswer === null}>
                     Lock answer
                   </NeonButton>
                   <NeonButton
@@ -751,20 +606,14 @@ export default function QuizPage() {
                         void handleFinish("Skipped final question. Submitting attempt.");
                         return;
                       }
-
-                      setCurrentIndex((index) => index + 1);
+                      setCurrentIndex((i) => i + 1);
                       setSelectedAnswer(null);
                       questionStartedAtRef.current = Date.now();
                     }}
                   >
-                    <CircleSlash size={16} />
-                    Skip
+                    <CircleSlash size={14} /> Skip
                   </NeonButton>
-                  <NeonButton
-                    variant="ghost"
-                    glowColor="pink"
-                    onClick={() => void handleAbandon()}
-                  >
+                  <NeonButton variant="ghost" glowColor="magenta" onClick={() => void handleAbandon()}>
                     Abandon
                   </NeonButton>
                 </div>
@@ -773,79 +622,65 @@ export default function QuizPage() {
           ) : review ? (
             <>
               <GlassCard className="p-6">
-                <div className="text-xs uppercase tracking-[0.25em] text-primary/80">
-                  Result analysis
-                </div>
-                <div className="mt-2 text-3xl font-black text-white">
-                  {review.attempt.score}% score
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Correct
-                    </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {review.attempt.correct}
-                    </div>
+                <div className="text-xs uppercase tracking-[0.25em] text-primary-light font-bold">Result Analysis</div>
+                <div className="mt-2 text-3xl font-black text-white">{review.attempt.score}% Score</div>
+                <div className="mt-4 grid gap-3 grid-cols-3 text-center">
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Correct</div>
+                    <div className="text-xl font-bold text-accent-emerald mt-1">{review.attempt.correct}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Wrong
-                    </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {review.attempt.wrong}
-                    </div>
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Wrong</div>
+                    <div className="text-xl font-bold text-accent-red mt-1">{review.attempt.wrong}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Skipped
-                    </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {review.attempt.skipped}
-                    </div>
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Skipped</div>
+                    <div className="text-xl font-bold text-accent-amber mt-1">{review.attempt.skipped}</div>
                   </div>
                 </div>
               </GlassCard>
 
-              <GlassCard className="p-5">
-                <div className="text-sm font-semibold text-white">Answer review</div>
-                <div className="mt-4 space-y-4">
-                  {review.review.map((item, index) => (
-                    <div
-                      key={`${item.question}-${index}`}
-                      className="rounded-2xl border border-white/8 bg-white/4 p-4"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-white">
-                          Q{index + 1}. {item.question}
-                        </div>
-                        <span
-                          className={`rounded-full border px-2 py-1 text-[11px] uppercase tracking-wide ${
-                            item.isCorrect
-                              ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
-                              : "border-rose-400/30 bg-rose-500/10 text-rose-300"
-                          }`}
-                        >
-                          {item.isCorrect ? "correct" : "review"}
-                        </span>
-                      </div>
-                      <div className="mt-3 text-sm leading-6 text-gray-300">
-                        Correct option:{" "}
-                        {item.correctAnswer !== null && item.correctAnswer !== undefined
-                          ? item.options[item.correctAnswer]?.label
-                          : "-"}
-                      </div>
-                      <div className="mt-2 text-sm leading-6 text-gray-400">
-                        {item.explanation}
-                      </div>
+              {/* Review List */}
+              <div className="space-y-4 max-h-[500px] overflow-y-auto no-scrollbar">
+                {review.review.map((item, index) => (
+                  <GlassCard key={index} className={`p-5 border-l-4 ${item.isCorrect ? "border-l-accent-emerald" : "border-l-accent-red"}`}>
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Question {index + 1}</div>
+                    <p className="mt-2 text-sm font-semibold text-white">{item.question}</p>
+
+                    <div className="mt-4 space-y-2">
+                      {item.options.map((option, optIdx) => {
+                        const isSelected = item.selectedAnswer === optIdx;
+                        const isCorrectOpt = item.correctAnswer === optIdx;
+
+                        return (
+                          <div
+                            key={optIdx}
+                            className={`rounded-xl border p-3 text-xs ${
+                              isCorrectOpt
+                                ? "border-accent-emerald/30 bg-accent-emerald/10 text-white"
+                                : isSelected
+                                  ? "border-accent-red/30 bg-accent-red/10 text-white"
+                                  : "border-white/[0.06] bg-white/[0.02]"
+                            }`}
+                          >
+                            <span className="font-bold">{option.label}.</span> {option.text}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              </GlassCard>
+
+                    {item.explanation && (
+                      <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-xs text-gray-400">
+                        <span className="font-bold text-gray-200">Explanation:</span> {item.explanation}
+                      </div>
+                    )}
+                  </GlassCard>
+                ))}
+              </div>
             </>
           ) : (
-            <GlassCard className="p-6 text-sm leading-6 text-gray-400">
-              Generate a quiz to open the live attempt view and result analysis.
+            <GlassCard className="p-8 text-center text-sm text-gray-500">
+              Launch a quiz to start the practice cockpit.
             </GlassCard>
           )}
         </div>

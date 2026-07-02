@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
 import {
   listChaptersBySubject,
   listExams,
@@ -41,14 +43,14 @@ function buildSearchUrl(
 
 function difficultyClasses(level: ChapterSummary["difficulty"] | TopicSummary["difficulty"]) {
   if (level === "easy") {
-    return "border-emerald-400/30 bg-emerald-500/10 text-emerald-300";
+    return "border-accent-emerald/20 bg-accent-emerald/10 text-accent-emerald";
   }
 
   if (level === "hard") {
-    return "border-rose-400/30 bg-rose-500/10 text-rose-300";
+    return "border-accent-red/20 bg-accent-red/10 text-accent-red";
   }
 
-  return "border-amber-400/30 bg-amber-500/10 text-amber-300";
+  return "border-accent-amber/20 bg-accent-amber/10 text-accent-amber";
 }
 
 export default function LearnPage() {
@@ -61,13 +63,11 @@ export default function LearnPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedChapterId, setSelectedChapterId] = useState("");
   const [status, setStatus] = useState("Loading syllabus explorer...");
+  const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
-
+    if (!hasHydrated) return;
     let active = true;
 
     async function loadExams() {
@@ -75,14 +75,10 @@ export default function LearnPage() {
         const examList = await listExams();
         const suggestedExam =
           examList.find((exam) =>
-            user?.exam
-              ? exam.name.toLowerCase().includes(user.exam.toLowerCase())
-              : false,
+            user?.exam ? exam.name.toLowerCase().includes(user.exam.toLowerCase()) : false,
           ) || examList[0];
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         startTransition(() => {
           setExams(examList);
@@ -90,144 +86,85 @@ export default function LearnPage() {
           setStatus("Live syllabus map loaded. Choose a chapter and start learning.");
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        setStatus(
-          error instanceof Error
-            ? `Could not load syllabus explorer: ${error.message}`
-            : "Could not load syllabus explorer.",
-        );
+        if (!active) return;
+        setStatus(error instanceof Error ? `Could not load syllabus: ${error.message}` : "Could not load syllabus.");
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
     void loadExams();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [hasHydrated, user, startTransition]);
 
   useEffect(() => {
-    if (!selectedExamSlug) {
-      return;
-    }
-
+    if (!selectedExamSlug) return;
     let active = true;
 
     async function loadSubjects() {
       try {
         const nextSubjects = await listSubjectsByExam(selectedExamSlug);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setSubjects(nextSubjects);
           setSelectedSubjectId(getId(nextSubjects[0]));
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setSubjects([]);
         setSelectedSubjectId("");
-        setStatus(
-          error instanceof Error
-            ? `Subject load failed: ${error.message}`
-            : "Subject load failed.",
-        );
+        setStatus(error instanceof Error ? `Subject load failed: ${error.message}` : "Subject load failed.");
       }
     }
 
     void loadSubjects();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedExamSlug, startTransition]);
 
   useEffect(() => {
-    if (!selectedSubjectId) {
-      return;
-    }
-
+    if (!selectedSubjectId) return;
     let active = true;
 
     async function loadChapters() {
       try {
         const nextChapters = await listChaptersBySubject(selectedSubjectId);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setChapters(nextChapters);
           setSelectedChapterId(getId(nextChapters[0]));
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setChapters([]);
         setSelectedChapterId("");
-        setStatus(
-          error instanceof Error
-            ? `Chapter load failed: ${error.message}`
-            : "Chapter load failed.",
-        );
+        setStatus(error instanceof Error ? `Chapter load failed: ${error.message}` : "Chapter load failed.");
       }
     }
 
     void loadChapters();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedSubjectId, startTransition]);
 
   useEffect(() => {
-    if (!selectedChapterId) {
-      return;
-    }
-
+    if (!selectedChapterId) return;
     let active = true;
 
     async function loadTopics() {
       try {
         const nextTopics = await listTopicsByChapter(selectedChapterId);
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         startTransition(() => {
           setTopics(nextTopics);
         });
       } catch (error) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setTopics([]);
-        setStatus(
-          error instanceof Error
-            ? `Topic load failed: ${error.message}`
-            : "Topic load failed.",
-        );
+        setStatus(error instanceof Error ? `Topic load failed: ${error.message}` : "Topic load failed.");
       }
     }
 
     void loadTopics();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedChapterId, startTransition]);
 
   const selectedExam = useMemo(
@@ -244,10 +181,7 @@ export default function LearnPage() {
   );
 
   const lectureTracks = useMemo(() => {
-    if (!selectedExam || !selectedSubject || !selectedChapter) {
-      return [];
-    }
-
+    if (!selectedExam || !selectedSubject || !selectedChapter) return [];
     return [
       {
         title: "Foundation lecture",
@@ -270,52 +204,43 @@ export default function LearnPage() {
     ];
   }, [selectedChapter, selectedExam, selectedSubject]);
 
-  const topicHighlights = useMemo(() => {
-    return topics.slice(0, 4).map((topic) => topic.name);
-  }, [topics]);
+  const topicHighlights = useMemo(() => topics.slice(0, 4).map((t) => t.name), [topics]);
+  const difficultTopics = useMemo(() => topics.filter((t) => t.difficulty === "hard").map((t) => t.name).slice(0, 3), [topics]);
 
-  const difficultTopics = useMemo(() => {
-    return topics
-      .filter((topic) => topic.difficulty === "hard")
-      .map((topic) => topic.name)
-      .slice(0, 3);
-  }, [topics]);
+  if (!hasHydrated || loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <OrbitLoader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-            Learn module
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">
-            Lecture and concept explorer
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
-            {status}
-          </p>
-        </div>
-
-        <GlassCard className="w-full max-w-xl p-4">
-          <label className="text-sm text-gray-300">
-            Target exam
+      <PageHeader
+        tag="Learn module"
+        title="Syllabus Explorer"
+        subtitle={status}
+        action={
+          <GlassCard className="p-3">
             <select
               value={selectedExamSlug}
               onChange={(event) => setSelectedExamSlug(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+              className="select-orbital"
             >
               {exams.map((exam) => (
-                <option key={exam.slug} value={exam.slug} className="bg-black">
+                <option key={exam.slug} value={exam.slug} className="bg-surface">
                   {exam.name}
                 </option>
               ))}
             </select>
-          </label>
-        </GlassCard>
-      </div>
+          </GlassCard>
+        }
+      />
 
-      <GlassCard className="p-4">
-        <div className="flex flex-wrap gap-3">
+      {/* Subjects */}
+      <GlassCard className="p-3">
+        <div className="flex flex-wrap gap-2">
           {subjects.map((subject) => {
             const active = getId(subject) === selectedSubjectId;
             return (
@@ -323,10 +248,10 @@ export default function LearnPage() {
                 key={getId(subject) || subject.slug}
                 type="button"
                 onClick={() => setSelectedSubjectId(getId(subject))}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all ${
                   active
-                    ? "border-primary/40 bg-primary/15 text-primary"
-                    : "border-white/10 bg-white/5 text-gray-300 hover:text-white"
+                    ? "border-primary/30 bg-primary/10 text-primary-light"
+                    : "border-white/[0.06] bg-white/[0.02] text-gray-400 hover:text-white"
                 }`}
               >
                 {subject.name}
@@ -337,45 +262,43 @@ export default function LearnPage() {
       </GlassCard>
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        {/* Chapters list */}
         <GlassCard className="p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold text-white">Chapter lane</div>
-            <span className="text-xs text-gray-400">
-              {isPending ? "Refreshing..." : `${chapters.length} chapters`}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm font-semibold text-white">Chapters</div>
+            <span className="text-xs text-gray-500">
+              {isPending ? "Refreshing..." : `${chapters.length} total`}
             </span>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="space-y-2">
             {chapters.map((chapter) => {
               const active = getId(chapter) === selectedChapterId;
-
               return (
                 <button
                   key={getId(chapter) || chapter.slug}
                   type="button"
                   onClick={() => setSelectedChapterId(getId(chapter))}
-                  className={`w-full rounded-2xl border p-4 text-left transition-colors ${
+                  className={`w-full rounded-xl border p-4 text-left transition-all ${
                     active
-                      ? "border-primary/30 bg-primary/10"
-                      : "border-white/8 bg-white/4 hover:border-white/15"
+                      ? "border-primary/30 bg-primary/[0.04]"
+                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-white">
-                        {chapter.name}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                          {chapter.weightage || 0}% weightage
+                      <div className="text-sm font-semibold text-white">{chapter.name}</div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-500">
+                        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
+                          {chapter.weightage || 0}% weight
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
                           {chapter.estimatedHours || 0} hrs
                         </span>
                       </div>
                     </div>
                     <span
-                      className={`rounded-full border px-2 py-1 text-[11px] uppercase tracking-wide ${difficultyClasses(
+                      className={`rounded-full border px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider ${difficultyClasses(
                         chapter.difficulty,
                       )}`}
                     >
@@ -388,24 +311,25 @@ export default function LearnPage() {
           </div>
         </GlassCard>
 
+        {/* Selected Chapter Details */}
         <div className="space-y-6">
           {selectedExam && selectedSubject && selectedChapter ? (
             <>
               <GlassCard className="p-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.25em] text-primary/80">
-                      {selectedExam.name} | {selectedSubject.name}
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-light">
+                      {selectedExam.name} • {selectedSubject.name}
                     </div>
-                    <h2 className="mt-2 text-3xl font-black text-white">
+                    <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white">
                       {selectedChapter.name}
                     </h2>
-                    <p className="mt-3 text-sm leading-6 text-gray-400">
-                      Build from concepts, push through guided practice, and close with a revision shot before moving back into tests.
+                    <p className="mt-3 text-sm leading-relaxed text-gray-400">
+                      Learn through guided track sprints, study resources, and targeted roadmap items.
                     </p>
                   </div>
                   <span
-                    className={`rounded-full border px-3 py-2 text-xs uppercase tracking-[0.25em] ${difficultyClasses(
+                    className={`rounded-full border px-3 py-1 text-xs uppercase font-bold tracking-widest ${difficultyClasses(
                       selectedChapter.difficulty,
                     )}`}
                   >
@@ -414,73 +338,48 @@ export default function LearnPage() {
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Weightage
+                  {[
+                    { label: "Weightage", value: `${selectedChapter.weightage || 0}%` },
+                    { label: "Study Load", value: `${selectedChapter.estimatedHours || 0} hrs` },
+                    { label: "Topics", value: topics.length },
+                  ].map((stat) => (
+                    <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                      <div className="text-[10px] uppercase tracking-wider text-gray-500">{stat.label}</div>
+                      <div className="mt-1 text-xl font-bold text-white">{stat.value}</div>
                     </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {selectedChapter.weightage || 0}%
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Study load
-                    </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {selectedChapter.estimatedHours || 0} hrs
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">
-                      Topic count
-                    </div>
-                    <div className="mt-2 text-2xl font-black text-white">
-                      {topics.length}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </GlassCard>
 
+              {/* Lecture tracks */}
               <div className="grid gap-4 lg:grid-cols-3">
                 {lectureTracks.map((track) => (
                   <GlassCard key={track.title} className="p-5" glowColor="cyan">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-cyan-300">
-                      <PlayCircle size={16} />
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-cyan">
+                      <PlayCircle size={14} />
                       {track.title}
                     </div>
-                    <div className="mt-4 text-2xl font-black text-white">
-                      {track.duration}
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-gray-300">
-                      {track.focus}
-                    </p>
-                    <a
-                      href={track.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-5 inline-flex w-full"
-                    >
-                      <NeonButton glowColor="cyan" className="w-full">
-                        <Sparkles size={16} />
-                        Search lecture
+                    <div className="mt-4 text-xl font-black text-white">{track.duration}</div>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-400">{track.focus}</p>
+                    <a href={track.href} target="_blank" rel="noreferrer" className="mt-4 block">
+                      <NeonButton glowColor="cyan" className="w-full text-xs py-2">
+                        <Sparkles size={12} /> Search
                       </NeonButton>
                     </a>
                   </GlassCard>
                 ))}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              {/* Grid lists */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <BookOpenText size={16} className="text-primary" />
-                    Class notes
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
+                    <BookOpenText size={16} className="text-primary-light" />
+                    Concepts Highlight
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="space-y-2">
                     {topicHighlights.map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-2xl border border-white/8 bg-white/4 p-4 text-sm text-gray-200"
-                      >
+                      <div key={item} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
                         {item}
                       </div>
                     ))}
@@ -488,88 +387,72 @@ export default function LearnPage() {
                 </GlassCard>
 
                 <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <FileText size={16} className="text-cyan-300" />
-                    Revision notes
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
+                    <FileText size={16} className="text-accent-cyan" />
+                    Revision Strategy
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="space-y-2">
                     {(difficultTopics.length ? difficultTopics : topicHighlights).map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-2xl border border-white/8 bg-white/4 p-4 text-sm text-gray-200"
-                      >
-                        Revise {item} with formula recall + 5 fast questions.
+                      <div key={item} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
+                        Solve formula drill for {item}.
                       </div>
                     ))}
                   </div>
                 </GlassCard>
 
                 <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Target size={16} className="text-orange-300" />
-                    DPP sequence
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
+                    <Target size={16} className="text-accent-amber" />
+                    Daily Practice Protocol
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="space-y-2">
                     {topics.slice(0, 4).map((topic, index) => (
-                      <div
-                        key={topic.slug}
-                        className="rounded-2xl border border-white/8 bg-white/4 p-4 text-sm text-gray-200"
-                      >
-                        Set {index + 1}: {topic.name} | {topic.estimatedMinutes || 30} min
+                      <div key={topic.slug} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
+                        Set {index + 1}: {topic.name} • {topic.estimatedMinutes || 30}m
                       </div>
                     ))}
                   </div>
                 </GlassCard>
 
                 <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Layers3 size={16} className="text-pink-300" />
-                    Assignment focus
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
+                    <Layers3 size={16} className="text-accent-magenta" />
+                    Focus Assignment
                   </div>
-                  <div className="mt-4 space-y-3">
+                  <div className="space-y-2">
                     {topics
                       .slice()
                       .sort((a, b) => (b.weightage || 0) - (a.weightage || 0))
                       .slice(0, 4)
                       .map((topic) => (
-                        <div
-                          key={`${topic.slug}-assignment`}
-                          className="rounded-2xl border border-white/8 bg-white/4 p-4 text-sm text-gray-200"
-                        >
-                          {topic.name} | priority {topic.weightage || 0}%
+                        <div key={`${topic.slug}-assignment`} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
+                          {topic.name} • priority {topic.weightage || 0}%
                         </div>
                       ))}
                   </div>
                 </GlassCard>
               </div>
 
+              {/* Topic roadmap */}
               <GlassCard className="p-5">
-                <div className="text-sm font-semibold text-white">Topic roadmap</div>
-                <div className="mt-4 space-y-3">
+                <div className="text-sm font-semibold text-white mb-4">Topic Roadmap</div>
+                <div className="space-y-2">
                   {topics.map((topic) => (
-                    <div
-                      key={topic.slug}
-                      className="rounded-2xl border border-white/8 bg-white/4 p-4"
-                    >
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div key={topic.slug} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <div className="text-sm font-semibold text-white">
-                            {topic.name}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                          <div className="text-sm font-semibold text-white">{topic.name}</div>
+                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-500">
+                            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
                               {topic.estimatedMinutes || 30} min
                             </span>
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
                               {topic.weightage || 0}% focus
-                            </span>
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                              {topic.prerequisites?.length || 0} prerequisites
                             </span>
                           </div>
                         </div>
                         <span
-                          className={`rounded-full border px-2 py-1 text-[11px] uppercase tracking-wide ${difficultyClasses(
+                          className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider sm:self-center self-start ${difficultyClasses(
                             topic.difficulty,
                           )}`}
                         >
@@ -582,8 +465,8 @@ export default function LearnPage() {
               </GlassCard>
             </>
           ) : (
-            <GlassCard className="p-6 text-sm text-gray-400">
-              No chapter selected yet.
+            <GlassCard className="p-6 text-center text-sm text-gray-500">
+              No chapter selected.
             </GlassCard>
           )}
         </div>

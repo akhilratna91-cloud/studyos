@@ -1,160 +1,103 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import {
-  Activity,
-  ArrowUpRight,
-  Gauge,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
+import { Activity, Brain, ShieldCheck, Target } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { getAnalytics, getTaskStats, getTodayDashboard, type AnalyticsSnapshot, type UserTaskStats } from "@/lib/api";
-import { demoAnalytics, demoDashboard } from "@/lib/demo-data";
+import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
+import { getAnalytics, getTaskStats, type AnalyticsSnapshot, type UserTaskStats } from "@/lib/api";
+import { demoAnalytics } from "@/lib/demo-data";
 import { useUserStore } from "@/store/user-store";
 
 export default function AnalyticsPage() {
   const { token, hasHydrated } = useUserStore();
-  const [analytics, setAnalytics] = useState<AnalyticsSnapshot>(demoAnalytics);
-  const [taskStats, setTaskStats] = useState<UserTaskStats>(demoDashboard.overall);
-  const [revisionDue, setRevisionDue] = useState(demoDashboard.revision.dueCount);
-  const [status, setStatus] = useState("Loading analytics...");
-  const [, startTransition] = useTransition();
+  const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null);
+  const [taskStats, setTaskStats] = useState<UserTaskStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
-
+    if (!hasHydrated) return;
     let active = true;
 
     async function load() {
-      if (!token) {
-        startTransition(() => {
-          setAnalytics(demoAnalytics);
-          setTaskStats(demoDashboard.overall);
-          setRevisionDue(demoDashboard.revision.dueCount);
-          setStatus("Demo analytics loaded. Sign in to pull live precision metrics.");
-        });
-        return;
-      }
-
       try {
-        const [analyticsResult, statsResult, dashboardResult] = await Promise.all([
-          getAnalytics(token),
-          getTaskStats(token),
-          getTodayDashboard(token),
-        ]);
-
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
-          setAnalytics(analyticsResult);
-          setTaskStats(statsResult);
-          setRevisionDue(dashboardResult.revision.dueCount);
-          setStatus("Live analytics synced from quizzes, tasks and revision load.");
-        });
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
+        if (token) {
+          const [a, t] = await Promise.all([getAnalytics(token), getTaskStats(token)]);
+          if (active) { setAnalytics(a); setTaskStats(t); }
+        } else {
           setAnalytics(demoAnalytics);
-          setTaskStats(demoDashboard.overall);
-          setRevisionDue(demoDashboard.revision.dueCount);
-          setStatus(
-            error instanceof Error
-              ? `Live analytics unavailable: ${error.message}`
-              : "Live analytics unavailable.",
-          );
-        });
+        }
+      } catch {
+        if (active) setAnalytics(demoAnalytics);
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
     void load();
+    return () => { active = false; };
+  }, [hasHydrated, token]);
 
-    return () => {
-      active = false;
-    };
-  }, [token, hasHydrated, startTransition]);
+  const v: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+  const item: Variants = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } };
+
+  if (!hasHydrated || loading) return <div className="flex min-h-[60vh] items-center justify-center"><OrbitLoader size="lg" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-          Performance intelligence
-        </p>
-        <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">
-          Read the pattern, not just the score
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">{status}</p>
-      </div>
+    <motion.div initial="hidden" animate="show" variants={v} className="space-y-6">
+      <PageHeader tag="Intelligence hub" title="Analytics" subtitle="Track your performance, identify patterns, and optimize your study approach." />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <GlassCard className="p-5" glowColor="primary">
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <ShieldCheck size={16} />
-            Accuracy
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">{analytics.accuracy}%</div>
-        </GlassCard>
+      <motion.div variants={item} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard icon={<ShieldCheck size={18} />} label="Accuracy" value={analytics?.accuracy || 0} suffix="%" color="primary" />
+        <StatCard icon={<Target size={18} />} label="Progress" value={analytics?.progress || 0} suffix="%" color="cyan" />
+        <StatCard icon={<Activity size={18} />} label="Tasks Done" value={taskStats?.completedTasks || 0} color="emerald" />
+        <StatCard icon={<Brain size={18} />} label="Study Hours" value={(taskStats?.completedHours || 0).toFixed(1)} suffix="hrs" color="amber" />
+      </motion.div>
 
-        <GlassCard className="p-5" glowColor="cyan">
-          <div className="flex items-center gap-2 text-sm text-cyan-300">
-            <TrendingUp size={16} />
-            Completion
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">{taskStats.completionRate}%</div>
-        </GlassCard>
-
-        <GlassCard className="p-5" glowColor="orange">
-          <div className="flex items-center gap-2 text-sm text-orange-300">
-            <Gauge size={16} />
-            Completed hours
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">{taskStats.completedHours}</div>
-        </GlassCard>
-
-        <GlassCard className="p-5" glowColor="pink">
-          <div className="flex items-center gap-2 text-sm text-pink-400">
-            <Activity size={16} />
-            Revision due
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">{revisionDue}</div>
-        </GlassCard>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      {/* Weak chapters */}
+      <motion.div variants={item}>
         <GlassCard className="p-6">
-          <div className="text-sm font-semibold text-white">Weak chapters</div>
-          <div className="mt-4 space-y-3">
-            {analytics.weak_chapters.map((chapter, index) => (
-              <div
-                key={chapter}
-                className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/4 p-4"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-white">{chapter}</div>
-                  <div className="mt-1 text-xs text-gray-400">
-                    Priority rank #{index + 1}
-                  </div>
-                </div>
-                <ArrowUpRight size={16} className="text-primary" />
+          <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Weak Areas — Focus Here</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(analytics?.weak_chapters || []).map((ch) => (
+              <div key={ch} className="rounded-xl border border-accent-red/20 bg-accent-red/[0.05] p-4">
+                <div className="text-sm font-semibold text-white">{ch}</div>
+                <div className="mt-1 text-[10px] text-accent-red">Needs attention</div>
               </div>
             ))}
+            {(!analytics?.weak_chapters || analytics.weak_chapters.length === 0) && (
+              <div className="col-span-full rounded-xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-500">
+                No weak areas detected. Keep going!
+              </div>
+            )}
           </div>
         </GlassCard>
+      </motion.div>
 
-        <GlassCard className="p-6">
-          <div className="text-sm font-semibold text-white">Coach summary</div>
-          <p className="mt-4 text-sm leading-6 text-gray-300">
-            Accuracy is strongest when completion discipline stays above 70%. Use the weak chapter list as your recovery stack, then revisit this panel after two focused sessions.
-          </p>
-        </GlassCard>
-      </div>
-    </div>
+      {/* Overall stats */}
+      {taskStats && (
+        <motion.div variants={item}>
+          <GlassCard className="p-6">
+            <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Overall Statistics</h3>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500">Total Tasks</div>
+                <div className="mt-1 text-2xl font-black text-white">{taskStats.totalTasks}</div>
+              </div>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500">Completion Rate</div>
+                <div className="mt-1 text-2xl font-black text-accent-emerald">{taskStats.completionRate}%</div>
+              </div>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500">Skipped</div>
+                <div className="mt-1 text-2xl font-black text-accent-amber">{taskStats.skippedTasks}</div>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }

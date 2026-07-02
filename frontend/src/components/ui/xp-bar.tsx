@@ -1,48 +1,54 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface XpBarProps {
   xp: number;
   level: number;
-  className?: string;
 }
 
-export function XpBar({ xp, level, className }: XpBarProps) {
-  // Simple calculation: 500 XP per level.
-  const currentLevelXp = xp % 500;
-  const targetXp = 500;
-  const progressPercent = (currentLevelXp / targetXp) * 100;
+export function XpBar({ xp, level }: XpBarProps) {
+  const xpInLevel = xp % 500;
+  const percent = Math.min((xpInLevel / 500) * 100, 100);
 
   return (
-    <div className={cn("w-full flex flex-col gap-2", className)}>
-      <div className="flex justify-between items-end">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/20 text-primary px-2 py-1 rounded border border-primary/30 text-xs font-bold font-mono shadow-[0_0_10px_rgba(34,197,94,0.3)]">
-            LVL {level}
-          </div>
-          <span className="text-gray-400 text-sm font-medium">Novice Scholar</span>
+    <div className="flex items-center gap-4">
+      {/* Level badge */}
+      <div className="relative flex-shrink-0">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-neon-primary">
+          <span className="text-lg font-black text-white">{level}</span>
         </div>
-        <span className="text-primary text-xs font-bold tracking-widest">{currentLevelXp} / {targetXp} XP</span>
+        <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-accent-cyan animate-pulse-glow" />
       </div>
-      
-      {/* Track */}
-      <div className="h-4 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 relative shadow-inner">
-        {/* Fill */}
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progressPercent}%` }}
-          transition={{ type: "spring", stiffness: 50, damping: 15 }}
-          className="h-full bg-gradient-to-r from-green-500 to-green-300 relative"
-        >
-          {/* Shine effect */}
-          <motion.div 
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            className="absolute top-0 bottom-0 w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg]"
+
+      {/* Bar */}
+      <div className="flex-1">
+        <div className="mb-1.5 flex items-center justify-between text-xs">
+          <span className="font-semibold text-gray-300">
+            Level {level}
+          </span>
+          <span className="font-mono text-primary-light">
+            {xp.toLocaleString()} XP
+          </span>
+        </div>
+        <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <motion.div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary via-primary-light to-accent-cyan"
+            initial={{ width: 0 }}
+            animate={{ width: `${percent}%` }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
           />
-        </motion.div>
+          {/* Glow edge */}
+          <motion.div
+            className="absolute top-0 h-full w-3 rounded-full bg-white/40 blur-[3px]"
+            initial={{ left: 0 }}
+            animate={{ left: `calc(${percent}% - 6px)` }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-gray-500">
+          {500 - xpInLevel} XP to Level {level + 1}
+        </div>
       </div>
     </div>
   );

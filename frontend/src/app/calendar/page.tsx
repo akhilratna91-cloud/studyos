@@ -1,132 +1,158 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { CalendarCheck2, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
+import { CalendarDays, Check } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
 import { getCalendar, markCalendar, type CalendarRecord } from "@/lib/api";
-import { demoCalendar } from "@/lib/demo-data";
 import { useUserStore } from "@/store/user-store";
 
-function buildLast28Days() {
-  return Array.from({ length: 28 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (27 - index));
-    return date;
-  });
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfMonth(year: number, month: number) {
+  return new Date(year, month, 1).getDay();
 }
 
 export default function CalendarPage() {
-  const { token, hasHydrated } = useUserStore();
-  const [calendar, setCalendar] = useState<CalendarRecord[]>(demoCalendar);
-  const [status, setStatus] = useState("Loading calendar...");
-  const [isPending, startTransition] = useTransition();
+  const { token, hasHydrated, addXp } = useUserStore();
+  const [calendar, setCalendar] = useState<CalendarRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState(false);
 
-  const recentDays = useMemo(() => buildLast28Days(), []);
-  const completedDays = useMemo(
-    () => new Set(calendar.filter((entry) => entry.completed).map((entry) => entry.dateString)),
-    [calendar],
-  );
+  const now = new Date();
+  const [viewYear] = useState(now.getFullYear());
+  const [viewMonth] = useState(now.getMonth());
+
+  const todayStr = now.toISOString().split("T")[0];
+  const daysInMonth = getDaysInMonth(viewYear, viewMonth);
+  const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
+  const monthName = now.toLocaleString("default", { month: "long", year: "numeric" });
+
+  const completedDates = new Set(calendar.filter((c) => c.completed).map((c) => c.dateString));
+  const todayMarked = completedDates.has(todayStr);
 
   useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
+    if (!hasHydrated) return;
+    let active = true;
 
-    async function loadCalendar() {
-      if (!token) {
-        startTransition(() => {
-          setCalendar(demoCalendar);
-          setStatus("Demo calendar active. Sign in to store real completion marks.");
-        });
-        return;
-      }
-
+    async function load() {
       try {
-        const records = await getCalendar(token);
-        startTransition(() => {
-          setCalendar(records);
-          setStatus("Live study calendar synced.");
-        });
-      } catch (error) {
-        startTransition(() => {
-          setCalendar(demoCalendar);
-          setStatus(
-            error instanceof Error
-              ? `Calendar sync failed: ${error.message}`
-              : "Calendar sync failed.",
-          );
-        });
-      }
+        if (token) {
+          const result = await getCalendar(token);
+          if (active) setCalendar(result);
+        }
+      } catch { /* fallback */ }
+      finally { if (active) setLoading(false); }
     }
 
-    void loadCalendar();
-  }, [hasHydrated, token, startTransition]);
+    void load();
+    return () => { active = false; };
+  }, [hasHydrated, token]);
 
   async function handleMarkToday() {
-    const todayKey = new Date().toISOString().split("T")[0];
-
-    if (!token) {
-      setCalendar((current) => [{ id: todayKey, dateString: todayKey, completed: true }, ...current]);
-      setStatus("Demo calendar marked. Sign in to make it persistent.");
-      return;
-    }
-
+    if (!token || todayMarked) return;
+    setMarking(true);
     try {
-      await markCalendar(token, todayKey);
-      const records = await getCalendar(token);
-      setCalendar(records);
-      setStatus("Today marked complete.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to mark today.");
-    }
+      await markCalendar(token, todayStr);
+      addXp(25);
+      const refreshed = await getCalendar(token);
+      setCalendar(refreshed);
+    } catch { /* fallback */ }
+    finally { setMarking(false); }
   }
 
+  const v: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+  const item: Variants = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } };
+
+  if (!hasHydrated || loading) return <div className="flex min-h-[60vh] items-center justify-center"><OrbitLoader size="lg" /></div>;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-          Calendar map
-        </p>
-        <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">
-          Visual consistency tracker
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">{status}</p>
-      </div>
+    <motion.div initial="hidden" animate="show" variants={v} className="space-y-6">
+      <PageHeader
+        tag="Consistency tracker"
+        title="Study Calendar"
+        subtitle="Mark each day you studied. Build an unbreakable streak."
+        action={
+          token && !todayMarked ? (
+            <NeonButton onClick={() => void handleMarkToday()} loading={marking}>
+              <CalendarDays size={16} /> Mark Today
+            </NeonButton>
+          ) : todayMarked ? (
+            <div className="flex items-center gap-2 rounded-xl border border-accent-emerald/20 bg-accent-emerald/10 px-4 py-2 text-sm text-accent-emerald">
+              <Check size={16} /> Today marked!
+            </div>
+          ) : undefined
+        }
+      />
 
-      <GlassCard className="p-5">
-        <NeonButton onClick={() => void handleMarkToday()}>
-          <CheckCircle2 size={16} />
-          {isPending ? "Updating..." : "Mark today complete"}
-        </NeonButton>
-      </GlassCard>
+      <motion.div variants={item}>
+        <GlassCard className="p-6">
+          <h3 className="mb-6 text-center font-[family-name:var(--font-heading)] text-lg font-bold text-white">{monthName}</h3>
 
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-          <CalendarCheck2 size={16} className="text-cyan-300" />
-          Last 28 days
-        </div>
-        <div className="mt-6 grid grid-cols-7 gap-3">
-          {recentDays.map((day) => {
-            const key = day.toISOString().split("T")[0];
-            const isComplete = completedDays.has(key);
+          {/* Day labels */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              <div key={d} className="text-center text-[10px] font-medium uppercase tracking-wider text-gray-500 py-2">{d}</div>
+            ))}
+          </div>
 
-            return (
-              <div
-                key={key}
-                className={`rounded-2xl border p-3 text-center text-xs ${
-                  isComplete
-                    ? "border-primary/30 bg-primary/15 text-primary"
-                    : "border-white/8 bg-white/4 text-gray-400"
-                }`}
-              >
-                <div>{day.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2)}</div>
-                <div className="mt-1 text-sm font-bold">{day.getDate()}</div>
-              </div>
-            );
-          })}
-        </div>
-      </GlassCard>
-    </div>
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Empty cells for offset */}
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+
+            {/* Day cells */}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const isToday = dateStr === todayStr;
+              const isCompleted = completedDates.has(dateStr);
+
+              return (
+                <div
+                  key={day}
+                  className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isCompleted
+                      ? "bg-primary/20 text-primary-light border border-primary/30 shadow-neon-primary"
+                      : isToday
+                        ? "border border-accent-cyan/30 text-accent-cyan bg-accent-cyan/[0.05]"
+                        : "text-gray-500 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {isCompleted ? <Check size={14} /> : day}
+                </div>
+              );
+            })}
+          </div>
+        </GlassCard>
+      </motion.div>
+
+      {/* Stats */}
+      <motion.div variants={item}>
+        <GlassCard className="p-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center">
+              <div className="text-2xl font-black text-primary-light">{completedDates.size}</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Days Studied</div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center">
+              <div className="text-2xl font-black text-accent-amber">{calendar.length}</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Records</div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center sm:col-span-1 col-span-2">
+              <div className="text-2xl font-black text-accent-emerald">{daysInMonth > 0 ? Math.round((completedDates.size / daysInMonth) * 100) : 0}%</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">This Month</div>
+            </div>
+          </div>
+        </GlassCard>
+      </motion.div>
+    </motion.div>
   );
 }

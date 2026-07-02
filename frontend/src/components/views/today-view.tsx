@@ -1,410 +1,283 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  Clock3,
-  Pause,
-  Play,
-  SkipForward,
-  Sparkles,
-  X,
-} from "lucide-react";
-import confetti from "canvas-confetti";
+import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
+import { CheckCircle2, Circle, Clock3, FastForward, Flame, PlayCircle } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
 import {
   getTodayDashboard,
   updateTaskStatus,
   type DailyTaskItem,
+  type TodayDashboard,
   type TaskStatus,
-  type TodayProgress,
 } from "@/lib/api";
-import { demoDashboard, demoTasks } from "@/lib/demo-data";
+import { demoDashboard } from "@/lib/demo-data";
 import { useUserStore } from "@/store/user-store";
 
-function formatTimer(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
+function getId(item: { id?: string; _id?: string }) {
+  return item.id || item._id || "";
 }
 
-function computeProgress(tasks: DailyTaskItem[]): TodayProgress {
-  const summary = tasks.reduce(
-    (acc, task) => {
-      acc.totalTasks += 1;
-      acc.totalMinutes += task.durationMinutes;
-
-      if (task.status === "completed") {
-        acc.completed += 1;
-        acc.completedMinutes += task.durationMinutes;
-      }
-      if (task.status === "pending") {
-        acc.pending += 1;
-      }
-      if (task.status === "in-progress") {
-        acc.inProgress += 1;
-      }
-      if (task.status === "skipped") {
-        acc.skipped += 1;
-      }
-
-      return acc;
-    },
-    {
-      totalTasks: 0,
-      completed: 0,
-      inProgress: 0,
-      pending: 0,
-      skipped: 0,
-      totalMinutes: 0,
-      completedMinutes: 0,
-      completionRate: 0,
-    },
-  );
-
-  summary.completionRate = summary.totalTasks
-    ? Math.round((summary.completed / summary.totalTasks) * 100)
-    : 0;
-
-  return summary;
-}
+const statusConfig: Record<TaskStatus, { icon: typeof Circle; color: string; label: string }> = {
+  pending: { icon: Circle, color: "text-gray-500", label: "Pending" },
+  "in-progress": { icon: PlayCircle, color: "text-accent-cyan", label: "In Progress" },
+  completed: { icon: CheckCircle2, color: "text-accent-emerald", label: "Done" },
+  skipped: { icon: FastForward, color: "text-accent-amber", label: "Skipped" },
+};
 
 export default function TodayView() {
-  const { token, hasHydrated, demoMode, addXp, incrementStreak } = useUserStore();
-  const [tasks, setTasks] = useState<DailyTaskItem[]>(demoTasks);
-  const [progress, setProgress] = useState<TodayProgress>(demoDashboard.today.progress);
-  const [focusTask, setFocusTask] = useState<DailyTaskItem | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [message, setMessage] = useState("Syncing your mission board...");
-  const [, startTransition] = useTransition();
+  const { token, hasHydrated, addXp } = useUserStore();
+  const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
-
+    if (!hasHydrated) return;
     let active = true;
 
-    async function loadTasks() {
-      if (!token) {
-        startTransition(() => {
-          setTasks(demoTasks);
-          setProgress(demoDashboard.today.progress);
-          setMessage("Demo tasks loaded. Sign in to track your real execution.");
-        });
-        return;
-      }
-
+    async function load() {
       try {
-        const dashboard = await getTodayDashboard(token);
-
-        if (!active) {
-          return;
+        if (token) {
+          const result = await getTodayDashboard(token);
+          if (active) setDashboard(result);
+        } else {
+          setDashboard(demoDashboard);
         }
-
-        startTransition(() => {
-          setTasks(dashboard.today.tasks);
-          setProgress(dashboard.today.progress);
-          setMessage("Live plan synced. Keep the chain moving.");
-        });
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
-          setTasks(demoTasks);
-          setProgress(demoDashboard.today.progress);
-          setMessage(
-            error instanceof Error
-              ? `Live sync failed. Staying in demo mode: ${error.message}`
-              : "Live sync failed. Staying in demo mode.",
-          );
-        });
+      } catch {
+        if (active) setDashboard(demoDashboard);
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
-    void loadTasks();
+    void load();
+    return () => { active = false; };
+  }, [hasHydrated, token]);
 
-    return () => {
-      active = false;
-    };
-  }, [token, hasHydrated, startTransition]);
+  async function handleStatusChange(task: DailyTaskItem, status: TaskStatus) {
+    if (!token) return;
+    const taskId = getId(task);
+    if (!taskId) return;
 
-  useEffect(() => {
-    if (!focusTask) {
-      return;
-    }
-
-    const focusMinutes = Math.min(25, Math.max(5, focusTask.durationMinutes));
-    setSecondsLeft(focusMinutes * 60);
-    setIsRunning(true);
-  }, [focusTask]);
-
-  useEffect(() => {
-    if (!isRunning) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          window.clearInterval(timer);
-          setIsRunning(false);
-          setMessage("Pomodoro complete. Capture the win and mark the task.");
-          return 0;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [isRunning]);
-
-  const nextTask = useMemo(
-    () => tasks.find((task) => task.status !== "completed") || tasks[0] || null,
-    [tasks],
-  );
-
-  const focusPercent = Math.min(100, Math.max(0, progress.completionRate));
-
-  async function patchTask(task: DailyTaskItem, status: TaskStatus) {
-    const taskId = task.id || task._id || "";
-
-    if (token && taskId && !demoMode) {
+    try {
       await updateTaskStatus(token, taskId, status);
+      if (status === "completed") addXp(50);
+
+      const refreshed = await getTodayDashboard(token);
+      setDashboard(refreshed);
+    } catch {
+      // silently fail
     }
-
-    setTasks((current) => {
-      const updated = current.map((item) => {
-        if ((item.id || item._id) === taskId || item.chapterName === task.chapterName) {
-          return { ...item, status };
-        }
-
-        return item;
-      });
-
-      setProgress(computeProgress(updated));
-      return updated;
-    });
   }
 
-  async function handleComplete(task: DailyTaskItem) {
-    await patchTask(task, "completed");
-    addXp(Math.max(50, Math.round(task.durationMinutes * 1.5)));
-    incrementStreak();
-    setFocusTask(null);
-    setIsRunning(false);
-    setMessage(`${task.chapterName} completed. XP claimed and streak protected.`);
-    confetti({
-      particleCount: 120,
-      spread: 70,
-      origin: { y: 0.65 },
-      colors: ["#22C55E", "#22D3EE", "#F59E0B"],
-    });
-  }
+  const tasks = dashboard?.today?.tasks || [];
+  const progress = dashboard?.today?.progress;
+  const completionPercent = progress?.completionRate || 0;
+  const revisionCards = dashboard?.revision?.cards || [];
 
-  async function handleSkip(task: DailyTaskItem) {
-    await patchTask(task, "skipped");
-    setMessage(`${task.chapterName} skipped. Planner will need a recovery pass.`);
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 25 } },
+  };
+
+  if (!hasHydrated || loading) {
+    return <div className="flex min-h-[60vh] items-center justify-center"><OrbitLoader size="lg" /></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-            Today&apos;s execution
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-white sm:text-5xl">
-            Stay on protocol
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
-            {message}
-          </p>
-        </div>
+    <motion.div initial="hidden" animate="show" variants={containerVariants} className="space-y-6">
+      <PageHeader
+        tag="Execution engine"
+        title="Today's Mission"
+        subtitle={dashboard?.motivation || "Execute with precision. Every task matters."}
+      />
 
-        <GlassCard className="w-full max-w-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.25em] text-gray-400">
-                Progress
-              </div>
-              <div className="mt-1 text-2xl font-black text-white">
-                {focusPercent}%
-              </div>
-            </div>
-            <div className="relative h-16 w-16">
-              <svg className="h-full w-full -rotate-90">
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="26"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="transparent"
-                  className="text-white/10"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="26"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="transparent"
-                  strokeDasharray="163"
-                  strokeDashoffset={163 - (163 * focusPercent) / 100}
-                  className="text-primary"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                {progress.completed}/{progress.totalTasks}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-        <GlassCard className="p-6" hoverLift={false}>
-          {nextTask ? (
-            <div className="space-y-6">
-              <div>
-                <div className="text-xs uppercase tracking-[0.25em] text-primary">
-                  Up next
+      {/* Progress overview */}
+      <motion.div variants={itemVariants}>
+        <GlassCard className="p-6">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            {/* Circular progress */}
+            <div className="flex items-center gap-5">
+              <div className="relative h-20 w-20 flex-shrink-0">
+                <svg className="h-full w-full -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
+                  <motion.circle
+                    cx="40" cy="40" r="34" fill="none"
+                    stroke="url(#progressGrad)" strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 34}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 34 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 34 * (1 - completionPercent / 100) }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                  />
+                  <defs>
+                    <linearGradient id="progressGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#6366F1" />
+                      <stop offset="100%" stopColor="#22D3EE" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-black text-white">{completionPercent}%</span>
                 </div>
-                <h2 className="mt-2 text-2xl font-black text-white">
-                  {nextTask.chapterName}
-                </h2>
-                <p className="mt-2 text-sm text-gray-400">
-                  {nextTask.subjectName} | {nextTask.durationMinutes} minutes | {nextTask.status}
-                </p>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <NeonButton onClick={() => setFocusTask(nextTask)}>
-                  <Play size={16} />
-                  Launch focus mode
-                </NeonButton>
-                <NeonButton
-                  variant="outline"
-                  glowColor="cyan"
-                  onClick={() => void handleComplete(nextTask)}
-                >
-                  <CheckCircle2 size={16} />
-                  Complete now
-                </NeonButton>
-                <NeonButton
-                  variant="ghost"
-                  glowColor="pink"
-                  onClick={() => void handleSkip(nextTask)}
-                >
-                  <SkipForward size={16} />
-                  Skip
-                </NeonButton>
+              <div>
+                <div className="text-sm font-semibold text-white">Daily Progress</div>
+                <div className="mt-1 text-xs text-gray-400">
+                  {progress?.completed || 0} of {progress?.totalTasks || 0} tasks completed
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-gray-400">
-              No tasks exist yet. Generate a study plan to begin execution tracking.
-            </div>
-          )}
-        </GlassCard>
 
-        <GlassCard className="p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Sparkles size={16} className="text-cyan-300" />
-            Today&apos;s workload
+            {/* Quick stats */}
+            <div className="flex gap-4 text-center">
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                <div className="text-lg font-black text-white">{progress?.totalMinutes || 0}</div>
+                <div className="text-[10px] text-gray-500">Total min</div>
+              </div>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                <div className="text-lg font-black text-accent-emerald">{progress?.completed || 0}</div>
+                <div className="text-[10px] text-gray-500">Done</div>
+              </div>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+                <div className="text-lg font-black text-accent-amber">{progress?.pending || 0}</div>
+                <div className="text-[10px] text-gray-500">Pending</div>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 space-y-3">
-            {tasks.map((task) => (
-              <div
-                key={task.id || task.chapterName}
-                className="rounded-2xl border border-white/8 bg-white/4 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-white">
+        </GlassCard>
+      </motion.div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        {/* Tasks list */}
+        <motion.div variants={itemVariants} className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-3">Task Queue</h3>
+          {tasks.map((task) => {
+            const taskId = getId(task) || task.chapterName;
+            const config = statusConfig[task.status];
+            const StatusIcon = config.icon;
+
+            return (
+              <GlassCard key={taskId} variant="elevated" className="p-4">
+                <div className="flex items-start gap-4">
+                  <div className={`mt-0.5 flex-shrink-0 ${config.color}`}>
+                    <StatusIcon size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-semibold ${task.status === "completed" ? "text-gray-500 line-through" : "text-white"}`}>
                       {task.chapterName}
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                      <Clock3 size={12} />
-                      {task.subjectName} | {task.durationMinutes} min
+                    <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: task.subjectColor || "#6366F1" }} />
+                        {task.subjectName}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock3 size={10} />
+                        {task.durationMinutes}m
+                      </span>
+                      <span className={`rounded-full border px-1.5 py-0.5 ${
+                        task.status === "completed" ? "border-accent-emerald/20 text-accent-emerald" :
+                        task.status === "in-progress" ? "border-accent-cyan/20 text-accent-cyan" :
+                        "border-white/[0.08] text-gray-500"
+                      }`}>
+                        {config.label}
+                      </span>
                     </div>
                   </div>
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] uppercase tracking-wide text-primary">
-                    {task.status}
-                  </span>
+
+                  {/* Action buttons */}
+                  {token && task.status !== "completed" && (
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      {task.status === "pending" && (
+                        <NeonButton
+                          variant="ghost"
+                          glowColor="cyan"
+                          className="text-[10px] px-2 py-1"
+                          onClick={() => void handleStatusChange(task, "in-progress")}
+                        >
+                          Start
+                        </NeonButton>
+                      )}
+                      <NeonButton
+                        variant="ghost"
+                        glowColor="primary"
+                        className="text-[10px] px-2 py-1"
+                        onClick={() => void handleStatusChange(task, "completed")}
+                      >
+                        Done
+                      </NeonButton>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      </div>
+              </GlassCard>
+            );
+          })}
 
-      {focusTask && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-base px-6"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.14),transparent_48%)]" />
-          <button
-            type="button"
-            onClick={() => {
-              setFocusTask(null);
-              setIsRunning(false);
-            }}
-            className="absolute right-6 top-6 text-gray-400 transition-colors hover:text-white"
-          >
-            <X size={28} />
-          </button>
-
-          <div className="text-center">
-            <div className="text-xs uppercase tracking-[0.35em] text-primary/80">
-              Focus mode
-            </div>
-            <div className="mt-4 text-[5rem] font-black leading-none text-white sm:text-[7rem]">
-              {formatTimer(secondsLeft)}
-            </div>
-            <div className="mt-4 text-lg font-semibold text-white">
-              {focusTask.chapterName}
-            </div>
-            <div className="mt-2 text-sm text-gray-400">{focusTask.subjectName}</div>
-          </div>
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={() => setIsRunning((current) => !current)}
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white"
-            >
-              {isRunning ? <Pause size={22} /> : <Play size={22} />}
-            </button>
-            <NeonButton onClick={() => void handleComplete(focusTask)}>
-              <CheckCircle2 size={18} />
-              Complete and claim XP
-            </NeonButton>
-            <button
-              type="button"
-              onClick={() => void handleSkip(focusTask)}
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white"
-            >
-              <SkipForward size={22} />
-            </button>
-          </div>
+          {tasks.length === 0 && (
+            <GlassCard className="p-8 text-center">
+              <div className="text-gray-500 text-sm">No tasks for today. Go to Planner to generate a study plan.</div>
+            </GlassCard>
+          )}
         </motion.div>
-      )}
-    </div>
+
+        {/* Revision panel */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-3">Revision Queue</h3>
+          {revisionCards.length > 0 ? (
+            revisionCards.map((card) => (
+              <GlassCard key={card.id || card.chapterName} className="p-4" glowColor="amber">
+                <div className="flex items-center gap-3">
+                  <Flame size={16} className="text-accent-amber flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white truncate">{card.chapterName}</div>
+                    <div className="text-[10px] text-gray-500">{card.subjectName}</div>
+                  </div>
+                  {card.isWeak && (
+                    <span className="rounded-full bg-accent-red/10 border border-accent-red/20 px-2 py-0.5 text-[10px] text-accent-red">
+                      Weak
+                    </span>
+                  )}
+                </div>
+              </GlassCard>
+            ))
+          ) : (
+            <GlassCard className="p-6 text-center">
+              <div className="text-sm text-gray-500">No revisions due today. Great work!</div>
+            </GlassCard>
+          )}
+
+          {/* Plans summary */}
+          {dashboard?.plans && dashboard.plans.length > 0 && (
+            <>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mt-6 mb-3">Active Plans</h3>
+              {dashboard.plans.map((plan) => (
+                <GlassCard key={plan.id || plan.title} className="p-4">
+                  <div className="text-sm font-semibold text-white">{plan.title}</div>
+                  <div className="mt-2 text-xs text-gray-400">
+                    Day {plan.currentDay} of {plan.totalDays} • {plan.daysRemaining} days left
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-accent-cyan"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${plan.progressPercent}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                </GlassCard>
+              ))}
+            </>
+          )}
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
-

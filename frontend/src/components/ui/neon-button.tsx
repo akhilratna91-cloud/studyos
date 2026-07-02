@@ -1,53 +1,89 @@
 "use client";
 
-import { motion, HTMLMotionProps } from "framer-motion";
+import { type ReactNode, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-interface NeonButtonProps extends HTMLMotionProps<"button"> {
-  variant?: "primary" | "outline" | "ghost";
-  glowColor?: "primary" | "orange" | "pink" | "cyan";
-  children: React.ReactNode;
+type ButtonVariant = "solid" | "outline" | "ghost" | "danger";
+type GlowColor = "primary" | "cyan" | "magenta" | "amber";
+
+interface NeonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  variant?: ButtonVariant;
+  glowColor?: GlowColor;
+  loading?: boolean;
 }
 
-export function NeonButton({ 
-  variant = "primary", 
-  glowColor = "primary", 
-  className, 
-  children, 
-  ...props 
+const solidBg: Record<GlowColor, string> = {
+  primary: "bg-gradient-to-r from-primary to-primary-light text-white shadow-neon-primary hover:shadow-[0_0_30px_rgba(99,102,241,0.6)]",
+  cyan: "bg-gradient-to-r from-accent-cyan to-cyan-300 text-gray-900 shadow-neon-cyan hover:shadow-[0_0_30px_rgba(34,211,238,0.6)]",
+  magenta: "bg-gradient-to-r from-accent-magenta to-pink-400 text-white shadow-neon-magenta hover:shadow-[0_0_30px_rgba(236,72,153,0.6)]",
+  amber: "bg-gradient-to-r from-accent-amber to-yellow-400 text-gray-900 shadow-neon-amber hover:shadow-[0_0_30px_rgba(245,158,11,0.6)]",
+};
+
+const outlineBorder: Record<GlowColor, string> = {
+  primary: "border-primary/40 text-primary hover:bg-primary/10 hover:shadow-neon-primary",
+  cyan: "border-accent-cyan/40 text-accent-cyan hover:bg-accent-cyan/10 hover:shadow-neon-cyan",
+  magenta: "border-accent-magenta/40 text-accent-magenta hover:bg-accent-magenta/10 hover:shadow-neon-magenta",
+  amber: "border-accent-amber/40 text-accent-amber hover:bg-accent-amber/10 hover:shadow-neon-amber",
+};
+
+const ghostColor: Record<GlowColor, string> = {
+  primary: "text-primary hover:bg-primary/10",
+  cyan: "text-accent-cyan hover:bg-accent-cyan/10",
+  magenta: "text-accent-magenta hover:bg-accent-magenta/10",
+  amber: "text-accent-amber hover:bg-accent-amber/10",
+};
+
+export function NeonButton({
+  children,
+  className,
+  variant = "solid",
+  glowColor = "primary",
+  loading = false,
+  disabled,
+  ...props
 }: NeonButtonProps) {
-  
-  const baseStyles = "px-6 py-2.5 rounded-lg font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2";
-  
-  const variants = {
-    primary: {
-      primary: "bg-primary text-black hover:bg-green-400 shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:shadow-[0_0_25px_rgba(34,197,94,0.8)]",
-      orange: "bg-[#F59E0B] text-black hover:bg-yellow-400 shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)]",
-      pink: "bg-[#EC4899] text-white hover:bg-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)] hover:shadow-[0_0_25px_rgba(236,72,153,0.8)]",
-      cyan: "bg-[#22D3EE] text-black hover:bg-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:shadow-[0_0_25px_rgba(34,211,238,0.8)]",
-    },
-    outline: {
-      primary: "border-2 border-primary text-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]",
-      orange: "border-2 border-[#F59E0B] text-[#F59E0B] hover:bg-[#F59E0B]/10 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]",
-      pink: "border-2 border-[#EC4899] text-[#EC4899] hover:bg-[#EC4899]/10 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]",
-      cyan: "border-2 border-[#22D3EE] text-[#22D3EE] hover:bg-[#22D3EE]/10 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]",
-    },
-    ghost: {
-      primary: "text-gray-300 hover:text-primary hover:bg-white/5",
-      orange: "text-gray-300 hover:text-[#F59E0B] hover:bg-white/5",
-      pink: "text-gray-300 hover:text-[#EC4899] hover:bg-white/5",
-      cyan: "text-gray-300 hover:text-[#22D3EE] hover:bg-white/5",
-    }
+  const base =
+    "relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none overflow-hidden";
+
+  const variantStyles: Record<ButtonVariant, string> = {
+    solid: solidBg[glowColor],
+    outline: `border ${outlineBorder[glowColor]} bg-transparent`,
+    ghost: `${ghostColor[glowColor]} bg-transparent`,
+    danger:
+      "bg-gradient-to-r from-accent-red to-red-400 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
   };
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.95 }}
-      className={cn(baseStyles, variants[variant][glowColor], className)}
+    <button
+      className={cn(base, variantStyles[variant], className)}
+      disabled={disabled || loading}
       {...props}
     >
+      {loading && (
+        <svg
+          className="h-4 w-4 animate-spin"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="3"
+            className="opacity-25"
+          />
+          <path
+            d="M4 12a8 8 0 018-8"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            className="opacity-75"
+          />
+        </svg>
+      )}
       {children}
-    </motion.button>
+    </button>
   );
 }

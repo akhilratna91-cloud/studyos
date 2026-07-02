@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import {
   Activity,
   Brain,
   CheckCircle2,
   Clock3,
+  ChevronRight,
   ShieldCheck,
   Sparkles,
   Target,
@@ -17,6 +18,8 @@ import {
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
 import { XpBar } from "@/components/ui/xp-bar";
+import { StatCard } from "@/components/ui/stat-card";
+import { OrbitLoader } from "@/components/ui/orbit-loader";
 import {
   demoLogin,
   getAnalytics,
@@ -48,371 +51,334 @@ export default function DashboardHome() {
     setGamification,
     setSession,
   } = useUserStore();
-  const [dashboard, setDashboard] = useState<TodayDashboard>(demoDashboard);
-  const [analytics, setAnalytics] = useState<AnalyticsSnapshot>(demoAnalytics);
+
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [statusNote, setStatusNote] = useState("Loading your control room...");
-  const [isChartReady, setIsChartReady] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null);
+  const [quote, setQuote] = useState("Stay disciplined. Your future self will thank you.");
+  const [weeklyData, setWeeklyData] = useState(demoWeeklyVelocity);
+  const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
-    setIsChartReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
+    if (!hasHydrated) return;
 
     let active = true;
 
-    async function loadDashboard() {
+    async function load() {
       try {
-        // Auto-login with demo if no token
-        let activeToken = token;
-        if (!activeToken) {
-          try {
-            const demoResult = await demoLogin();
-            activeToken = demoResult.accessToken;
-            setSession(demoResult);
-          } catch {
-            // Failed to auto-login, continue with demo data
-          }
-        }
-
         const [healthResult, motivationResult] = await Promise.all([
           getHealth(),
           getMotivation(),
         ]);
 
-        let nextDashboard: TodayDashboard = {
-          ...demoDashboard,
-          motivation: motivationResult.quote,
-        };
-        let nextAnalytics: AnalyticsSnapshot = demoAnalytics;
-        let nextStatus = "Demo mode is active. Sign in to sync your real plan and tasks.";
+        if (!active) return;
 
-        if (activeToken) {
+        setHealth(healthResult);
+        if (motivationResult?.quote) setQuote(motivationResult.quote);
+
+        if (token) {
           const [dashboardResult, analyticsResult] = await Promise.all([
-            getTodayDashboard(activeToken),
-            getAnalytics(activeToken),
+            getTodayDashboard(token),
+            getAnalytics(token),
           ]);
 
-          nextDashboard = {
-            ...dashboardResult,
-            motivation: motivationResult.quote || dashboardResult.motivation,
-          };
-          nextAnalytics = analyticsResult;
-          nextStatus = "Live data connected to your StudyOS backend.";
-        }
+          if (!active) return;
 
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
-          setHealth(healthResult);
-          setDashboard(nextDashboard);
-          setAnalytics(nextAnalytics);
-          setStatusNote(nextStatus);
-          setGamification({
-            disciplineScore: Math.max(
-              45,
-              Math.min(
-                98,
-                Math.round(
-                  (nextDashboard.today.progress.completionRate + nextAnalytics.accuracy) / 2,
-                ),
-              ),
-            ),
-          });
-        });
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
-          setHealth(null);
+          setDashboard(dashboardResult);
+          setAnalytics(analyticsResult);
+        } else {
           setDashboard(demoDashboard);
           setAnalytics(demoAnalytics);
-          setStatusNote(
-            error instanceof Error
-              ? `Backend unreachable. Showing demo mode instead: ${error.message}`
-              : "Backend unreachable. Showing demo mode instead.",
-          );
-        });
+        }
+      } catch {
+        if (!active) return;
+        setDashboard(demoDashboard);
+        setAnalytics(demoAnalytics);
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
-    void loadDashboard();
+    void load();
+    return () => { active = false; };
+  }, [hasHydrated, token]);
 
-    return () => {
-      active = false;
-    };
-  }, [token, hasHydrated, setGamification, setSession, startTransition]);
+  async function handleDemoLogin() {
+    setDemoLoading(true);
+    try {
+      const result = await demoLogin();
+      setSession(result);
+    } catch {
+      // silently fall back
+    } finally {
+      setDemoLoading(false);
+    }
+  }
 
-  const displayName = user?.displayName || user?.email.split("@")[0] || "Scholar";
-  const nextWeakTopic = analytics.weak_chapters[0];
-  const activePlan = dashboard.plans[0];
+  const todayTasks = dashboard?.today?.tasks || [];
+  const todayProgress = dashboard?.today?.progress;
+  const completionRate = todayProgress?.completionRate || 0;
+  const studyHours = dashboard?.overall?.completedHours || 0;
+  const accuracy = analytics?.accuracy || 0;
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 24, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 25 } },
+  };
+
+  if (!hasHydrated || loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <OrbitLoader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
       className="space-y-6"
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-primary/80">
-            Study Control Room
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
-            {dashboard.greeting}, <span className="text-primary">{displayName}</span>
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400 sm:text-base">
-            {dashboard.motivation}
-          </p>
-        </div>
+      {/* ─── Hero ─── */}
+      <motion.div variants={itemVariants}>
+        <GlassCard className="relative overflow-hidden p-6 sm:p-8">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-primary/[0.08] blur-[80px]" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-accent-cyan/[0.06] blur-[60px]" />
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <NeonButton
-            variant="outline"
-            glowColor="cyan"
-            onClick={() => router.push("/coach")}
-          >
-            <Sparkles size={16} />
-            Ask AI Coach
-          </NeonButton>
-          <NeonButton glowColor="primary" onClick={() => router.push("/today")}>
-            <Zap size={16} />
-            Start Today
-          </NeonButton>
-        </div>
-      </div>
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Welcome back,{" "}
+                <span className="text-gradient-primary">
+                  {user?.displayName || "Scholar"}
+                </span>
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-gray-400 italic">
+                &ldquo;{quote}&rdquo;
+              </p>
 
-      <GlassCard className="p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="text-sm font-semibold text-white">System status</div>
-            <div className="mt-1 text-sm text-gray-400">{statusNote}</div>
-          </div>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300">
-              {health ? `API: ${health.environment}` : "API: offline"}
-            </span>
-            <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
-              {demoMode ? "Mode: demo" : "Mode: live"}
-            </span>
-            <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-orange-300">
-              {streak} day streak
-            </span>
-          </div>
-        </div>
-      </GlassCard>
-
-      <GlassCard className="relative overflow-hidden p-6">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-              <Zap className="text-primary" size={18} />
-              XP and level
-            </h2>
-            <span className="text-sm text-gray-400">
-              {dashboard.today.progress.completed} of {dashboard.today.progress.totalTasks} tasks closed
-            </span>
-          </div>
-          <XpBar xp={xp} level={level} />
-        </div>
-      </GlassCard>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <GlassCard className="p-5" glowColor="orange">
-          <div className="flex items-center gap-2 text-sm text-orange-300">
-            <Clock3 size={16} />
-            Study hours
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">
-            {dashboard.overall.completedHours}
-            <span className="ml-1 text-sm font-medium text-gray-500">hrs</span>
-          </div>
-          <div className="mt-2 text-xs text-gray-400">
-            Total tracked workload {dashboard.overall.totalHours} hrs
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5" glowColor="cyan">
-          <div className="flex items-center gap-2 text-sm text-cyan-300">
-            <Target size={16} />
-            Completion
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">
-            {dashboard.today.progress.completionRate}
-            <span className="ml-1 text-sm font-medium text-gray-500">%</span>
-          </div>
-          <div className="mt-3 h-2 rounded-full bg-black/50">
-            <div
-              className="h-2 rounded-full bg-cyan-400"
-              style={{ width: `${dashboard.today.progress.completionRate}%` }}
-            />
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5" glowColor="primary">
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <ShieldCheck size={16} />
-            Accuracy
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">
-            {analytics.accuracy}
-            <span className="ml-1 text-sm font-medium text-gray-500">%</span>
-          </div>
-          <div className="mt-2 text-xs text-gray-400">
-            Progress map is currently at {analytics.progress}%
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5" glowColor="pink">
-          <div className="flex items-center gap-2 text-sm text-pink-400">
-            <Activity size={16} />
-            Discipline
-          </div>
-          <div className="mt-3 text-3xl font-black text-white">
-            {disciplineScore}
-            <span className="ml-1 text-sm font-medium text-gray-500">/100</span>
-          </div>
-          <div className="mt-2 text-xs text-gray-400">
-            Weak topic watch: {nextWeakTopic || "No major red flag"}
-          </div>
-        </GlassCard>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <GlassCard className="p-6">
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.25em] text-gray-400">
-                Weekly rhythm
-              </div>
-              <div className="mt-1 text-lg font-bold text-white">
-                Momentum curve
-              </div>
+              {demoMode && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <NeonButton
+                    variant="outline"
+                    glowColor="primary"
+                    onClick={handleDemoLogin}
+                    loading={demoLoading}
+                  >
+                    <Zap size={14} /> Try Demo
+                  </NeonButton>
+                  <NeonButton
+                    variant="ghost"
+                    glowColor="cyan"
+                    onClick={() => router.push("/profile")}
+                  >
+                    Sign in
+                  </NeonButton>
+                </div>
+              )}
             </div>
-            <div className="text-sm text-gray-400">
-              {isPending ? "Refreshing..." : "Last synced just now"}
+
+            {/* API status */}
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2">
+              <div className={`h-2 w-2 rounded-full ${health ? "bg-accent-emerald shadow-[0_0_6px_rgba(16,185,129,0.6)]" : "bg-accent-red"}`} />
+              <span className="text-xs text-gray-400">
+                {health ? "Systems online" : "Connecting..."}
+              </span>
             </div>
           </div>
-          <div className="h-72 w-full">
-            {isChartReady ? (
+
+          {/* XP bar */}
+          <div className="relative z-10 mt-6">
+            <XpBar xp={xp} level={level} />
+          </div>
+        </GlassCard>
+      </motion.div>
+
+      {/* ─── Stats Grid ─── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          icon={<Clock3 size={18} />}
+          label="Study Hours"
+          value={studyHours.toFixed(1)}
+          suffix="hrs"
+          trend="Today"
+          trendUp
+          color="amber"
+        />
+        <StatCard
+          icon={<Target size={18} />}
+          label="Completion"
+          value={completionRate}
+          suffix="%"
+          color="cyan"
+        />
+        <StatCard
+          icon={<ShieldCheck size={18} />}
+          label="Accuracy"
+          value={accuracy}
+          suffix="%"
+          color="primary"
+        />
+        <StatCard
+          icon={<Activity size={18} />}
+          label="Discipline"
+          value={disciplineScore}
+          suffix="pts"
+          color="magenta"
+        />
+      </motion.div>
+
+      {/* ─── Chart + Side Panel ─── */}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        {/* Chart */}
+        <motion.div variants={itemVariants}>
+          <GlassCard className="flex h-full flex-col p-6">
+            <h3 className="mb-6 text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+              Performance Velocity
+            </h3>
+            <div className="min-h-[250px] flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={demoWeeklyVelocity}>
+                <AreaChart data={weeklyData}>
                   <defs>
-                    <linearGradient id="study-velocity" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22C55E" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="day" stroke="#6b7280" tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#050505",
+                      backgroundColor: "#0F1128",
                       border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: "16px",
+                      borderRadius: "12px",
+                      fontSize: "12px",
                     }}
+                    itemStyle={{ color: "#818CF8", fontWeight: "bold" }}
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="#333"
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={11}
                   />
                   <Area
                     type="monotone"
                     dataKey="score"
-                    stroke="#22C55E"
-                    strokeWidth={3}
-                    fill="url(#study-velocity)"
+                    stroke="#6366F1"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#colorScore)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center rounded-3xl border border-white/8 bg-white/4 text-sm text-gray-500">
-                Preparing momentum curve...
-              </div>
-            )}
-          </div>
-        </GlassCard>
-
-        <div className="space-y-6">
-          <GlassCard className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-cyan-300">
-              <Brain size={16} />
-              AI recommendation
             </div>
-            <p className="mt-4 text-sm leading-6 text-gray-300">
-              {nextWeakTopic
-                ? `Push ${nextWeakTopic} to the top of today's stack. Accuracy data says this is where the next jump will come from.`
-                : "Your weak-topic pressure is low right now. Use today for a timed recap and one clean mock review."}
-            </p>
-            <div className="mt-5">
+          </GlassCard>
+        </motion.div>
+
+        {/* Side panel */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          {/* AI Recommendation */}
+          <GlassCard variant="highlight" className="relative overflow-hidden p-5">
+            <Sparkles className="absolute -right-4 -top-4 h-20 w-20 text-accent-magenta/[0.08]" />
+            <div className="relative z-10">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gradient-cool">
+                AI Coach Insight
+              </div>
+              <p className="text-sm leading-relaxed text-gray-300">
+                {analytics?.weak_chapters?.length
+                  ? <>Focus on <span className="font-semibold text-white border-b border-dashed border-accent-cyan/40">{analytics.weak_chapters[0]}</span> — your accuracy needs improvement here.</>
+                  : "Keep up the momentum! Your consistency is building real skill."}
+              </p>
               <NeonButton
                 variant="ghost"
                 glowColor="cyan"
-                className="w-full bg-cyan-500/10"
+                className="mt-4 w-full bg-accent-cyan/[0.06] text-xs"
                 onClick={() => router.push("/coach")}
               >
-                <Sparkles size={16} />
-                Open AI Coach
+                View full analysis <ChevronRight size={14} />
               </NeonButton>
             </div>
           </GlassCard>
 
+          {/* Today&rsquo;s Tasks */}
           <GlassCard className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-white">Today&apos;s execution</div>
-              <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-gray-400">
-                {dashboard.today.progress.pending + dashboard.today.progress.inProgress} left
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Today&apos;s Protocol</h3>
+              <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10px] text-gray-400">
+                {todayTasks.filter((t) => t.status !== "completed").length} left
               </span>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {dashboard.today.tasks.slice(0, 3).map((task) => (
-                <div
-                  key={task.id || task.chapterName}
-                  className="rounded-2xl border border-white/8 bg-white/4 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-white">
+            <div className="space-y-2">
+              {todayTasks.slice(0, 4).map((task) => {
+                const isCompleted = task.status === "completed";
+                const taskId = task.id || task._id || task.chapterName;
+
+                return (
+                  <div
+                    key={taskId}
+                    className={`group flex items-center gap-3 rounded-xl border p-3 transition-all duration-200 ${
+                      isCompleted
+                        ? "border-primary/20 bg-primary/[0.04]"
+                        : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                        isCompleted
+                          ? "border-primary bg-primary text-white"
+                          : "border-gray-600"
+                      }`}
+                    >
+                      {isCompleted && <CheckCircle2 size={12} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-sm font-medium truncate ${
+                          isCompleted ? "text-gray-500 line-through" : "text-gray-200"
+                        }`}
+                      >
                         {task.chapterName}
                       </div>
-                      <div className="mt-1 text-xs text-gray-400">
-                        {task.subjectName} | {task.durationMinutes} min
+                      <div className="text-[10px] text-gray-500">
+                        {task.subjectName} • {task.durationMinutes}m
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-xs text-primary">
-                      <CheckCircle2 size={12} />
-                      {task.status}
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {dashboard.today.tasks.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-gray-400">
-                  No tasks queued yet. Generate a plan to start your daily execution system.
+              {todayTasks.length === 0 && (
+                <div className="rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-sm text-gray-500">
+                  No tasks today. Generate a plan first!
                 </div>
               )}
             </div>
-          </GlassCard>
 
-          {activePlan && (
-            <GlassCard className="p-5">
-              <div className="text-sm font-semibold text-white">Active plan</div>
-              <div className="mt-3 text-lg font-bold text-primary">{activePlan.title}</div>
-              <div className="mt-2 text-sm text-gray-400">
-                Day {activePlan.currentDay} of {activePlan.totalDays} | {activePlan.daysRemaining} days left
-              </div>
-            </GlassCard>
-          )}
-        </div>
+            {todayTasks.length > 0 && (
+              <NeonButton
+                variant="ghost"
+                glowColor="primary"
+                className="mt-3 w-full text-xs"
+                onClick={() => router.push("/today")}
+              >
+                View all tasks <ChevronRight size={14} />
+              </NeonButton>
+            )}
+          </GlassCard>
+        </motion.div>
       </div>
     </motion.div>
   );
 }
-
