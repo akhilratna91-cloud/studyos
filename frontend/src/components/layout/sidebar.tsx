@@ -52,17 +52,16 @@ export function Sidebar() {
       {/* Brand */}
       <div className="flex h-20 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-neon-primary">
-            <span className="text-sm font-black text-white">S</span>
-            <div className="absolute -inset-1 rounded-xl border border-primary/20 animate-pulse-glow" />
+          <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/15 bg-white/5">
+            <span className="font-editorial text-xs font-bold text-white">s</span>
           </div>
           {!collapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="font-[family-name:var(--font-heading)] text-xl font-black tracking-tight text-white"
+              className="font-editorial text-sm font-bold tracking-[0.1em] uppercase text-white"
             >
-              Study<span className="text-primary-light">OS</span>
+              StudyOS
             </motion.span>
           )}
         </Link>
@@ -85,23 +84,23 @@ export function Sidebar() {
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-xl bg-primary/[0.08] border border-primary/20"
+                  className="absolute inset-0 rounded-[4px] bg-white/[0.04] border border-white/10"
                   transition={{ type: "spring", stiffness: 350, damping: 30 }}
                 />
               )}
 
               <div
                 className={cn(
-                  "relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 z-10",
+                  "relative flex items-center gap-3 rounded-[4px] px-3 py-2.5 transition-all duration-200 z-10",
                   collapsed && "justify-center px-0",
                   isActive
-                    ? "text-primary-light font-semibold"
-                    : "text-gray-400 hover:text-white hover:bg-white/[0.04]",
+                    ? "text-white font-medium"
+                    : "text-gray-400 hover:text-white hover:bg-white/[0.03]",
                 )}
               >
-                <Icon size={20} className="flex-shrink-0" />
+                <Icon size={18} className="flex-shrink-0" />
                 {!collapsed && (
-                  <span className="text-sm">{item.name}</span>
+                  <span className="text-xs uppercase tracking-wider">{item.name}</span>
                 )}
               </div>
             </Link>
@@ -111,27 +110,27 @@ export function Sidebar() {
 
       {/* Bottom widget */}
       <div className={cn("p-3 mb-3", collapsed && "px-2")}>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+        <div className="rounded-[4px] border border-white/[0.06] bg-white/[0.02] p-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent-amber/15 border border-accent-amber/20">
-              <Flame size={18} className="text-accent-amber" />
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/10 bg-white/[0.04]">
+              <Flame size={15} className="text-white" />
             </div>
             {!collapsed && (
               <div>
-                <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
-                  Streak
+                <div className="font-editorial text-[9px] uppercase tracking-wider text-gray-500">
+                  streak
                 </div>
-                <div className="flex items-baseline gap-1 font-bold text-accent-amber">
-                  <span className="text-lg">{streak}</span>
-                  <span className="text-[10px] font-normal text-gray-500">days</span>
+                <div className="font-editorial flex items-baseline gap-1 font-bold text-white">
+                  <span className="text-sm">{streak}</span>
+                  <span className="text-[9px] font-normal text-gray-500">days</span>
                 </div>
               </div>
             )}
           </div>
           {!collapsed && (
-            <div className="mt-3 flex items-center justify-between text-[10px] text-gray-500">
-              <span>Lvl {level}</span>
-              <span className="font-mono text-primary-light">{xp.toLocaleString()} XP</span>
+            <div className="font-editorial mt-3 flex items-center justify-between text-[9px] text-gray-500">
+              <span>lvl {level}</span>
+              <span>{xp.toLocaleString()} xp</span>
             </div>
           )}
         </div>

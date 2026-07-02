@@ -6,12 +6,10 @@ import { motion, type Variants } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import {
   Activity,
-  Brain,
   CheckCircle2,
   Clock3,
   ChevronRight,
   ShieldCheck,
-  Sparkles,
   Target,
   Zap,
 } from "lucide-react";
@@ -43,13 +41,11 @@ export default function DashboardHome() {
   const {
     xp,
     level,
-    streak,
     disciplineScore,
     token,
     user,
     hasHydrated,
     demoMode,
-    setGamification,
     setSession,
   } = useUserStore();
 
@@ -57,7 +53,7 @@ export default function DashboardHome() {
   const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null);
   const [quote, setQuote] = useState("Stay disciplined. Your future self will thank you.");
-  const [weeklyData, setWeeklyData] = useState(demoWeeklyVelocity);
+  const [weeklyData] = useState(demoWeeklyVelocity);
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState(false);
 
@@ -161,13 +157,10 @@ export default function DashboardHome() {
             {/* Left Column — Text & Progress */}
             <div className="space-y-6">
               <div>
-                <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black tracking-tight text-white sm:text-4xl">
-                  Welcome back,{" "}
-                  <span className="text-gradient-primary">
-                    {user?.displayName || "Scholar"}
-                  </span>
+                <h1 className="font-editorial text-2xl font-bold uppercase tracking-wider text-white">
+                  Welcome back, {user?.displayName || "Scholar"}
                 </h1>
-                <p className="mt-3 text-sm leading-relaxed text-gray-400 italic">
+                <p className="mt-2 text-xs leading-relaxed text-gray-400 italic">
                   &ldquo;{quote}&rdquo;
                 </p>
 
@@ -179,7 +172,7 @@ export default function DashboardHome() {
                       onClick={handleDemoLogin}
                       loading={demoLoading}
                     >
-                      <Zap size={14} /> Try Demo
+                      <Zap size={13} /> Try Demo
                     </NeonButton>
                     <NeonButton
                       variant="ghost"
@@ -200,10 +193,10 @@ export default function DashboardHome() {
               <ThreeDModel />
               
               {/* Floating API status */}
-              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-base/80 px-3.5 py-1.5 backdrop-blur-md">
-                <div className={`h-1.5 w-1.5 rounded-full ${health ? "bg-accent-emerald shadow-[0_0_6px_rgba(16,185,129,0.6)]" : "bg-accent-red"}`} />
-                <span className="text-[10px] text-gray-400 font-semibold">
-                  {health ? "LIVE LINK" : "OFFLINE"}
+              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-[2px] border border-white/10 bg-black/60 px-3 py-1">
+                <div className={`h-1.5 w-1.5 rounded-full ${health ? "bg-white" : "bg-accent-red"}`} />
+                <span className="font-editorial text-[9px] text-gray-400 font-semibold tracking-wider uppercase">
+                  {health ? "link // active" : "offline"}
                 </span>
               </div>
             </div>
@@ -250,39 +243,41 @@ export default function DashboardHome() {
         {/* Chart */}
         <motion.div variants={itemVariants}>
           <GlassCard className="flex h-full flex-col p-6">
-            <h3 className="mb-6 text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
-              Performance Velocity
+            <h3 className="font-editorial mb-6 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
+              [ 01 // PERFORMANCE VELOCITY ]
             </h3>
             <div className="min-h-[250px] flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={weeklyData}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0F1128",
+                      backgroundColor: "#121212",
                       border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
+                      borderRadius: "2px",
+                      fontSize: "11px",
+                      fontFamily: "var(--font-editorial)"
                     }}
-                    itemStyle={{ color: "#818CF8", fontWeight: "bold" }}
+                    itemStyle={{ color: "#FFFFFF", fontWeight: "bold" }}
                   />
                   <XAxis
                     dataKey="day"
-                    stroke="#333"
+                    stroke="#525252"
                     tickLine={false}
                     axisLine={false}
-                    fontSize={11}
+                    fontSize={10}
+                    className="font-editorial"
                   />
                   <Area
                     type="monotone"
                     dataKey="score"
-                    stroke="#6366F1"
-                    strokeWidth={2.5}
+                    stroke="#FFFFFF"
+                    strokeWidth={1.5}
                     fillOpacity={1}
                     fill="url(#colorScore)"
                   />
@@ -295,24 +290,23 @@ export default function DashboardHome() {
         {/* Side panel */}
         <motion.div variants={itemVariants} className="space-y-4">
           {/* AI Recommendation */}
-          <GlassCard variant="highlight" className="relative overflow-hidden p-5">
-            <Sparkles className="absolute -right-4 -top-4 h-20 w-20 text-accent-magenta/[0.08]" />
+          <GlassCard variant="default" className="relative overflow-hidden p-5">
             <div className="relative z-10">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gradient-cool">
-                AI Coach Insight
+              <div className="font-editorial mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                [ 02 // AI COACH INSIGHT ]
               </div>
-              <p className="text-sm leading-relaxed text-gray-300">
+              <p className="text-xs leading-relaxed text-gray-400">
                 {analytics?.weak_chapters?.length
-                  ? <>Focus on <span className="font-semibold text-white border-b border-dashed border-accent-cyan/40">{analytics.weak_chapters[0]}</span> — your accuracy needs improvement here.</>
+                  ? <>Focus on <span className="font-semibold text-white border-b border-dashed border-white/40">{analytics.weak_chapters[0]}</span> — your accuracy needs improvement here.</>
                   : "Keep up the momentum! Your consistency is building real skill."}
               </p>
               <NeonButton
                 variant="ghost"
                 glowColor="cyan"
-                className="mt-4 w-full bg-accent-cyan/[0.06] text-xs"
+                className="mt-4 w-full bg-white/5 border border-white/10 text-[10px]"
                 onClick={() => router.push("/coach")}
               >
-                View full analysis <ChevronRight size={14} />
+                View full analysis <ChevronRight size={12} />
               </NeonButton>
             </div>
           </GlassCard>
@@ -320,8 +314,10 @@ export default function DashboardHome() {
           {/* Today&rsquo;s Tasks */}
           <GlassCard className="p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Today&apos;s Protocol</h3>
-              <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10px] text-gray-400">
+              <h3 className="font-editorial text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                [ 03 // TODAY&apos;S PROTOCOL ]
+              </h3>
+              <span className="font-editorial rounded-[2px] border border-white/10 bg-white/5 px-2.5 py-0.5 text-[9px] text-gray-400">
                 {todayTasks.filter((t) => t.status !== "completed").length} left
               </span>
             </div>
@@ -334,30 +330,30 @@ export default function DashboardHome() {
                 return (
                   <div
                     key={taskId}
-                    className={`group flex items-center gap-3 rounded-xl border p-3 transition-all duration-200 ${
+                    className={`group flex items-center gap-3 rounded-[2px] border p-3 transition-all duration-200 ${
                       isCompleted
-                        ? "border-primary/20 bg-primary/[0.04]"
-                        : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.03]"
+                        ? "border-white/10 bg-white/[0.02]"
+                        : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.01]"
                     }`}
                   >
                     <div
-                      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] border ${
                         isCompleted
-                          ? "border-primary bg-primary text-white"
+                          ? "border-white bg-white text-black"
                           : "border-gray-600"
                       }`}
                     >
-                      {isCompleted && <CheckCircle2 size={12} />}
+                      {isCompleted && <CheckCircle2 size={10} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div
-                        className={`text-sm font-medium truncate ${
-                          isCompleted ? "text-gray-500 line-through" : "text-gray-200"
+                        className={`text-xs font-semibold truncate ${
+                          isCompleted ? "text-gray-600 line-through" : "text-gray-300"
                         }`}
                       >
                         {task.chapterName}
                       </div>
-                      <div className="text-[10px] text-gray-500">
+                      <div className="font-editorial text-[9px] text-gray-500">
                         {task.subjectName} • {task.durationMinutes}m
                       </div>
                     </div>
@@ -366,7 +362,7 @@ export default function DashboardHome() {
               })}
 
               {todayTasks.length === 0 && (
-                <div className="rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-sm text-gray-500">
+                <div className="font-editorial rounded-[2px] border border-dashed border-white/[0.08] p-4 text-center text-xs text-gray-500">
                   No tasks today. Generate a plan first!
                 </div>
               )}
@@ -376,10 +372,10 @@ export default function DashboardHome() {
               <NeonButton
                 variant="ghost"
                 glowColor="primary"
-                className="mt-3 w-full text-xs"
+                className="mt-3 w-full text-[10px]"
                 onClick={() => router.push("/today")}
               >
-                View all tasks <ChevronRight size={14} />
+                View all tasks <ChevronRight size={12} />
               </NeonButton>
             )}
           </GlassCard>

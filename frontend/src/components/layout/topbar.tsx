@@ -43,13 +43,13 @@ export function Topbar() {
           {/* Left — Greeting & page title */}
           <div className="flex items-center gap-4">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-gray-500">
+              <p className="font-editorial text-[9px] uppercase tracking-[0.2em] text-gray-500">
                 {greeting}
                 {!demoMode && (
-                  <span className="text-primary-light">, {displayName}</span>
+                  <span className="text-white">, {displayName}</span>
                 )}
               </p>
-              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-white">
+              <h2 className="font-editorial text-md font-bold uppercase tracking-wider text-white">
                 {pageTitle}
               </h2>
             </div>

@@ -24,11 +24,6 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${inter.variable} font-[family-name:var(--font-body)] min-h-screen bg-base text-foreground antialiased`}
       >
         <div className="relative min-h-screen overflow-hidden bg-orbital">
-          {/* Animated orbital glow blobs */}
-          <div className="pointer-events-none fixed right-[-15%] top-[-10%] h-[40rem] w-[40rem] rounded-full bg-primary/[0.07] blur-[160px] animate-float" />
-          <div className="pointer-events-none fixed bottom-[-15%] left-[-10%] h-[35rem] w-[35rem] rounded-full bg-accent-cyan/[0.05] blur-[140px] animate-float" style={{ animationDelay: '-3s' }} />
-          <div className="pointer-events-none fixed top-[40%] left-[60%] h-[20rem] w-[20rem] rounded-full bg-accent-magenta/[0.04] blur-[120px] animate-float" style={{ animationDelay: '-1.5s' }} />
-
           <Sidebar />
 
           <div className="relative flex min-h-screen flex-col md:ml-[4.5rem] lg:ml-64">

@@ -41,12 +41,12 @@ export function GlassCard({
   style,
 }: GlassCardProps) {
   const baseStyles =
-    "rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl transition-all duration-500";
+    "rounded-[4px] border border-white/[0.08] bg-[#121212] transition-all duration-500";
 
   const variantStyles: Record<CardVariant, string> = {
     default: "",
     elevated:
-      "hover:translate-y-[-4px] hover:bg-white/[0.06]",
+      "hover:translate-y-[-2px] hover:bg-[#161616] hover:border-white/[0.18]",
     orbital: "animate-float",
     highlight: "gradient-border",
   };
