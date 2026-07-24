@@ -15,13 +15,15 @@
  * The output is a flat array of day objects ready to store in the StudyPlan model.
  */
 
+const { TopologicalSort } = require('../../shared/utils/dsa.utils');
+
 class PlanEngine {
   /**
    * Generate a complete study plan schedule.
    *
    * @param {object} params
    * @param {Array}  params.subjects   - [{ _id, name, icon, color, slug }]
-   * @param {Array}  params.chapters   - [{ _id, subjectId, name, slug, difficulty, weightage, estimatedHours }]
+   * @param {Array}  params.chapters   - [{ _id, subjectId, name, slug, difficulty, weightage, estimatedHours, prerequisiteIds, accuracy }]
    * @param {number} params.totalDays
    * @param {number} params.hoursPerDay
    * @param {number} [params.revisionInterval=7]  - insert revision day every N days (0 = none)
@@ -41,6 +43,9 @@ class PlanEngine {
   }) {
     const start = startDate ? new Date(startDate) : new Date();
 
+    // ── 0. Prerequisite DAG Topological Sort (Kahn's Algorithm) ───────────────
+    const { sorted: topoChapters } = TopologicalSort.sort(chapters);
+
     // ── 1. Build subject lookup ────────────────────────────────────────────────
     const subjectMap = new Map();
     for (const s of subjects) {
@@ -52,21 +57,29 @@ class PlanEngine {
       });
     }
 
-    // ── 2. Group chapters by subject, sort by weightage desc ───────────────────
+    // ── 2. Group chapters by subject, sort by Multi-Factor Priority Score ─────
     const chaptersBySubject = new Map();
-    for (const ch of chapters) {
+    for (const ch of topoChapters) {
       const sid = ch.subjectId.toString();
       if (!chaptersBySubject.has(sid)) chaptersBySubject.set(sid, []);
       chaptersBySubject.get(sid).push(ch);
     }
-    // Sort each group: hard first (they need more focus), then by weightage desc
+    // Sort each group using Multi-Factor Priority Score: (Weightage * Weakness * Urgency) / Hours
     const difficultyOrder = { hard: 0, medium: 1, easy: 2 };
     for (const [, chs] of chaptersBySubject) {
       chs.sort((a, b) => {
         const da = difficultyOrder[a.difficulty] ?? 1;
         const db = difficultyOrder[b.difficulty] ?? 1;
+
+        // Calculate Multi-Factor Score
+        const weaknessA = 1.0 + (1.0 - (a.accuracy || 0.7));
+        const weaknessB = 1.0 + (1.0 - (b.accuracy || 0.7));
+
+        const scoreA = ((a.weightage || 10) * weaknessA) / Math.max(1, a.estimatedHours || 1);
+        const scoreB = ((b.weightage || 10) * weaknessB) / Math.max(1, b.estimatedHours || 1);
+
         if (da !== db) return da - db;
-        return (b.weightage || 0) - (a.weightage || 0);
+        return scoreB - scoreA;
       });
     }
 

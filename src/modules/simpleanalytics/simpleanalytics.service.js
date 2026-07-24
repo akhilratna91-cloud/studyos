@@ -8,7 +8,9 @@
 const { QuizAttempt } = require('../quiz/quiz.model');
 const Gamification = require('../gamification/gamification.model');
 const ChapterProgress = require('../chapterprogress/chapterprogress.model');
+const DailyTask = require('../dailytask/dailytask.model');
 const mongoose = require('mongoose');
+const { Deque, PrefixSum } = require('../../shared/utils/dsa.utils');
 
 class SimpleAnalyticsService {
   
@@ -18,7 +20,7 @@ class SimpleAnalyticsService {
    * accuracy = correct / total attempted
    */
   static async calculateAccuracy(userId) {
-    const objectUserId = new mongoose.Types.ObjectId(userId);
+    const objectUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     
     // Very simple aggregation
     const result = await QuizAttempt.aggregate([
@@ -44,7 +46,7 @@ class SimpleAnalyticsService {
    * return completion %
    */
   static async getProgress(userId) {
-    const objectUserId = new mongoose.Types.ObjectId(userId);
+    const objectUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
 
     // Simple lookup from overall gamification stats (already calculated)
     const stats = await Gamification.findOne({ userId: objectUserId }).select('overallProgress').exec();
@@ -79,7 +81,7 @@ class SimpleAnalyticsService {
    * Find chapters with low accuracy/ratings. Simple queries only.
    */
   static async getWeakChapters(userId) {
-    const objectUserId = new mongoose.Types.ObjectId(userId);
+    const objectUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
 
     // Simplest approach: Query ChapterProgress for chapters started but with low rating/completion
     const weakChapters = await ChapterProgress.find({ 
@@ -96,20 +98,86 @@ class SimpleAnalyticsService {
   }
 
   /**
+   * 4. 7-Day Sliding Window Burnout Monitor (Deque)
+   */
+  static async calculateBurnoutRisk(userId) {
+    const objectUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const dailyTasks = await DailyTask.find({
+      userId: objectUserId,
+      date: { $gte: sevenDaysAgo, $lte: now },
+    }).sort({ date: 1 }).exec();
+
+    const windowDeque = new Deque(7);
+    for (const t of dailyTasks) {
+      windowDeque.pushBack(t.status === 'completed' ? 1 : 0);
+    }
+
+    const completionRate = windowDeque.averageBy() * 100;
+    const isBurnoutRisk = windowDeque.size >= 5 && completionRate < 40;
+
+    return {
+      rolling7DayCompletion: Math.round(completionRate),
+      isBurnoutRisk,
+      activeWindowDays: windowDeque.size,
+    };
+  }
+
+  /**
+   * 5. O(1) PrefixSum Velocity Query
+   */
+  static async getVelocityStats(userId) {
+    const objectUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    
+    // Aggregate completed task minutes per day over last 30 days
+    const dailyMinutesAgg = await DailyTask.aggregate([
+      { $match: { userId: objectUserId, status: 'completed' } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          totalMinutes: { $sum: '$durationMinutes' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const minutesVector = dailyMinutesAgg.map((d) => d.totalMinutes / 60);
+    const prefixSum = new PrefixSum(minutesVector);
+
+    return {
+      totalHours: Math.round(prefixSum.total * 10) / 10,
+      recent7DaysHours: Math.round(prefixSum.queryRange(Math.max(0, minutesVector.length - 7), minutesVector.length - 1) * 10) / 10,
+      dailyVectorLength: minutesVector.length,
+    };
+  }
+
+  /**
    * Generate Full Simple Analytics Payload
    */
-  static async getAnalytics(userId) {
-    const [accuracy, progress, weak_chapters] = await Promise.all([
+  static async getFullAnalytics(userId) {
+    const [accuracy, progress, weakChapters, burnout, velocity] = await Promise.all([
       this.calculateAccuracy(userId),
       this.getProgress(userId),
-      this.getWeakChapters(userId)
+      this.getWeakChapters(userId),
+      this.calculateBurnoutRisk(userId),
+      this.getVelocityStats(userId),
     ]);
 
     return {
       accuracy,
       progress,
-      weak_chapters
+      weak_chapters: weakChapters,
+      weakChapters,
+      burnout,
+      velocity,
     };
+  }
+
+  static async getAnalytics(userId) {
+    return this.getFullAnalytics(userId);
   }
 }
 

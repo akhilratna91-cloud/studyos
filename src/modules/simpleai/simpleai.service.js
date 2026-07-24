@@ -7,6 +7,9 @@
 
 const SimpleAnalyticsService = require('../simpleanalytics/simpleanalytics.service');
 const SubjectProgressService = require('../subjectprogress/subjectprogress.service');
+const DailyTask = require('../dailytask/dailytask.model');
+const mongoose = require('mongoose');
+const { PriorityQueue } = require('../../shared/utils/dsa.utils');
 
 const MOTIVATIONAL_QUOTES = [
   "Success is not final, failure is not fatal: it is the courage to continue that counts.",
@@ -21,22 +24,66 @@ class SimpleAIService {
 
   /**
    * 1. get_study_recommendation
-   * Analyzes progress & analytics to suggest next steps.
+   * Analyzes progress & analytics to suggest next steps using Max-Heap Priority Queue.
    */
   static async getStudyRecommendation(userId) {
-    // We already have a strong recommendations engine in SubjectProgress
+    const objectUserId = new mongoose.Types.ObjectId(userId);
     const recs = await SubjectProgressService.getRecommendations(userId, null);
-    
-    // Also pull simple analytics for context
-    const simple = await SimpleAnalyticsService.getAnalytics(userId);
+    const analytics = await SimpleAnalyticsService.getFullAnalytics(userId);
+
+    // Fetch pending daily tasks
+    const pendingTasks = await DailyTask.find({
+      userId: objectUserId,
+      status: { $in: ['pending', 'in-progress'] },
+    }).limit(10).exec();
+
+    // Push candidate recommendations into Max-Heap Priority Queue
+    const priorityQueue = new PriorityQueue((a, b) => b.priorityScore - a.priorityScore);
 
     if (recs && recs.length > 0) {
-      const topRec = recs[0];
+      for (const r of recs) {
+        priorityQueue.push({
+          type: 'subject_weakness',
+          title: `Focus on ${r.subjectName}`,
+          priorityScore: 90,
+          reason: r.reason,
+          action: r.action,
+        });
+      }
+    }
+
+    if (analytics.weakChapters && analytics.weakChapters.length > 0) {
+      for (const ch of analytics.weakChapters) {
+        priorityQueue.push({
+          type: 'chapter_weakness',
+          title: `Re-evaluate ${ch}`,
+          priorityScore: 85,
+          reason: `Accuracy in ${ch} is below baseline.`,
+          action: `Review notes and take 5 practice PYQs for ${ch}.`,
+        });
+      }
+    }
+
+    for (const task of pendingTasks) {
+      priorityQueue.push({
+        type: 'pending_task',
+        title: task.chapterName || 'Daily Module',
+        priorityScore: 70,
+        reason: 'Unfinished study task scheduled for today.',
+        action: `Complete task "${task.chapterName || 'Study Module'}" (+50 XP).`,
+      });
+    }
+
+    const topK = priorityQueue.popK(3);
+    const topRec = topK[0];
+
+    if (topRec) {
       return {
-        suggestion: `Your top priority should be '${topRec.subjectName}'.`,
+        suggestion: topRec.title,
         reason: topRec.reason,
         action: topRec.action,
-        context: `Your overall progress is at ${simple.progress}%.`
+        topKCandidates: topK,
+        context: `Your overall progress is at ${analytics.progress}%. Accuracy: ${analytics.accuracy}%.`,
       };
     }
 
@@ -44,7 +91,7 @@ class SimpleAIService {
       suggestion: "Keep up the good work!",
       reason: "No major weaknesses detected right now.",
       action: "Review your recent notes and take a mock test.",
-      context: `Your overall progress is at ${simple.progress}%.`
+      context: `Your overall progress is at ${analytics.progress}%.`,
     };
   }
 

@@ -14,6 +14,7 @@ const AppError = require('../../shared/errors/AppError');
 const { Quiz, QuizAttempt } = require('./quiz.model');
 const Question = require('../question/question.model');
 const mongoose = require('mongoose');
+const { FisherYates } = require('../../shared/utils/dsa.utils');
 
 class QuizService {
   // ───────────────────────────────────────────────────────────────────────────────
@@ -167,9 +168,9 @@ class QuizService {
       .select('question options difficulty type hint tags chapterName subjectName subjectIcon')
       .exec();
 
-    // Shuffle if configured
+    // Shuffle if configured using unbiased Fisher-Yates O(N) algorithm
     const quizQuestions = quiz.shuffleQuestions
-      ? questions.sort(() => Math.random() - 0.5)
+      ? FisherYates.shuffle(questions)
       : questions;
 
     return {
