@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { motion, type Variants } from "framer-motion";
-import { CalendarDays, Clock3, Layers3, Zap } from "lucide-react";
+import { CalendarDays, Clock3, Zap, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -75,8 +75,8 @@ export default function PlannerPage() {
           }));
           setStatus(
             token
-              ? "Live planner ready. Generate a plan and tasks will be distributed automatically."
-              : "Planner is in preview mode. Sign in to save a real study plan.",
+              ? "Live AI Planner ready. Custom plan generation will auto-distribute daily learning tasks."
+              : "Planner in preview mode. Sign in to persist custom study plans.",
           );
         });
       } catch (error) {
@@ -104,7 +104,7 @@ export default function PlannerPage() {
 
   async function handleGenerate() {
     if (!token) {
-      setStatus("Sign in from Profile to generate and persist a live plan.");
+      setStatus("Sign in from Profile to generate and save live plans.");
       return;
     }
 
@@ -143,96 +143,100 @@ export default function PlannerPage() {
   }
 
   return (
-    <motion.div initial="hidden" animate="show" variants={containerVariants} className="space-y-6">
-      <PageHeader tag="Planner engine" title="Build Your Study Cycle" subtitle={status} />
+    <motion.div initial="hidden" animate="show" variants={containerVariants} className="space-y-6 theme-planner">
+      <PageHeader tag="AI Plan Matrix" title="Build Custom Study Cycle" subtitle={status} />
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         {/* Form */}
         <motion.div variants={itemVariants}>
-          <GlassCard className="p-6">
+          <GlassCard glowColor="purple" className="p-6 border-purple-500/30">
+            <div className="flex items-center gap-2 mb-4 font-heading text-xs font-bold uppercase tracking-wider text-purple-300">
+              <Sparkles size={16} className="text-pink-400" /> Plan Parameters
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-gray-300">
-                Target exam
+              <label className="text-xs font-semibold text-purple-200">
+                Target Exam
                 <select value={form.examId} onChange={(e) => updateField("examId", e.target.value)} className="select-orbital mt-2">
                   {exams.map((exam) => (
-                    <option key={exam.slug} value={exam.slug} className="bg-surface">{exam.name}</option>
+                    <option key={exam.slug} value={exam.slug} className="bg-[#0E0919]">{exam.name}</option>
                   ))}
                 </select>
               </label>
 
-              <label className="text-sm text-gray-300">
-                Class / batch
+              <label className="text-xs font-semibold text-purple-200">
+                Class / Grade Batch
                 <input value={form.className} onChange={(e) => updateField("className", e.target.value)} className="input-orbital mt-2" />
               </label>
 
-              <label className="text-sm text-gray-300">
-                Total days
+              <label className="text-xs font-semibold text-purple-200">
+                Total Horizon (Days)
                 <input type="number" min={1} max={365} value={form.totalDays} onChange={(e) => updateField("totalDays", Number(e.target.value))} className="input-orbital mt-2" />
               </label>
 
-              <label className="text-sm text-gray-300">
-                Hours per day
+              <label className="text-xs font-semibold text-purple-200">
+                Daily Commitment (Hours)
                 <input type="number" min={1} max={16} step="0.5" value={form.hoursPerDay} onChange={(e) => updateField("hoursPerDay", Number(e.target.value))} className="input-orbital mt-2" />
               </label>
 
-              <label className="text-sm text-gray-300">
-                Revision cycle (days)
+              <label className="text-xs font-semibold text-purple-200">
+                Revision Interval (Days)
                 <input type="number" min={0} max={30} value={form.revisionInterval} onChange={(e) => updateField("revisionInterval", Number(e.target.value))} className="input-orbital mt-2" />
               </label>
 
-              <label className="text-sm text-gray-300">
-                Rest day interval
+              <label className="text-xs font-semibold text-purple-200">
+                Rest Day Interval
                 <input type="number" min={0} max={14} value={form.restDayInterval} onChange={(e) => updateField("restDayInterval", Number(e.target.value))} className="input-orbital mt-2" />
               </label>
 
-              <label className="text-sm text-gray-300 md:col-span-2">
-                Start date
+              <label className="text-xs font-semibold text-purple-200 md:col-span-2">
+                Start Date
                 <input type="date" value={form.startDate} onChange={(e) => updateField("startDate", e.target.value)} className="input-orbital mt-2" />
               </label>
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <NeonButton onClick={() => void handleGenerate()} loading={generating || isPending}>
-                <Zap size={16} /> Generate live plan
+              <NeonButton variant="solid" glowColor="purple" className="w-full text-xs" onClick={() => void handleGenerate()} loading={generating || isPending}>
+                <Zap size={16} /> Generate AI Plan (+200 XP)
               </NeonButton>
             </div>
           </GlassCard>
         </motion.div>
 
-        {/* Results */}
+        {/* Results & Existing Plans */}
         <motion.div variants={itemVariants} className="space-y-4">
           {lastCreated && (
-            <GlassCard className="p-5" glowColor="cyan">
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent-cyan">Latest generated plan</div>
-              <div className="mt-3 text-xl font-black text-white">{lastCreated.title}</div>
+            <GlassCard glowColor="emerald" className="p-5 border-emerald-500/30">
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">Newly Generated Plan</div>
+              <div className="mt-2 text-lg font-bold text-white text-gradient-emerald-purple">{lastCreated.title}</div>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "Study days", value: lastCreated.stats?.totalStudyDays || "-" },
+                  { label: "Study Days", value: lastCreated.stats?.totalStudyDays || "-" },
                   { label: "Revision", value: lastCreated.stats?.totalRevisionDays || 0 },
-                  { label: "Hours", value: lastCreated.stats?.totalStudyHours || "-" },
+                  { label: "Total Hours", value: lastCreated.stats?.totalStudyHours || "-" },
                 ].map((stat) => (
-                  <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500">{stat.label}</div>
-                    <div className="mt-1 text-xl font-bold text-white">{stat.value}</div>
+                  <div key={stat.label} className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-3">
+                    <div className="text-[10px] font-mono uppercase text-emerald-300">{stat.label}</div>
+                    <div className="mt-1 text-lg font-bold text-white">{stat.value}</div>
                   </div>
                 ))}
               </div>
             </GlassCard>
           )}
 
-          <GlassCard className="p-5">
+          <GlassCard glowColor="purple" className="p-5 border-purple-500/25">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-semibold text-white">Existing plans</div>
-              <span className="text-[10px] text-gray-500">{plans.length} total</span>
+              <div className="text-xs font-heading font-bold uppercase tracking-wider text-purple-300">Active Study Cycles</div>
+              <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{plans.length} Total</span>
             </div>
             <div className="space-y-3">
               {plans.map((plan) => (
-                <div key={plan.id || plan._id || plan.title} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                <div key={plan.id || plan._id || plan.title} className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-4 transition-all hover:border-purple-400/40">
                   <div className="text-sm font-semibold text-white">{plan.title}</div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><CalendarDays size={12} />{plan.config?.totalDays || "-"} days</span>
-                    <span className="flex items-center gap-1"><Clock3 size={12} />{plan.config?.hoursPerDay || "-"} h/day</span>
-                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary-light">{plan.status}</span>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-xs text-purple-200/80">
+                    <span className="flex items-center gap-1"><CalendarDays size={13} className="text-emerald-400" />{plan.config?.totalDays || "-"} days</span>
+                    <span className="flex items-center gap-1"><Clock3 size={13} className="text-purple-400" />{plan.config?.hoursPerDay || "-"} h/day</span>
+                    <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] text-emerald-300">{plan.status}</span>
                   </div>
                 </div>
               ))}

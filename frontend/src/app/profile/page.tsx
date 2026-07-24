@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
-import { LogOut, Mail, Lock, User, Zap, Sparkles, ShieldCheck } from "lucide-react";
+import { LogOut, Mail, Lock, User, Zap, ShieldCheck } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
 import { XpBar } from "@/components/ui/xp-bar";
@@ -21,7 +21,7 @@ import {
 import { useUserStore } from "@/store/user-store";
 
 export default function ProfilePage() {
-  const { token, user, xp, level, streak, disciplineScore, hasHydrated, demoMode, setSession, clearSession } = useUserStore();
+  const { token, user, xp, level, streak, disciplineScore, hasHydrated, setSession, clearSession } = useUserStore();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -98,60 +98,60 @@ export default function ProfilePage() {
   // Logged in view
   if (token && user) {
     return (
-      <motion.div initial="hidden" animate="show" variants={v} className="space-y-6">
-        <PageHeader tag="Identity" title="Your Profile" />
+      <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-profile">
+        <PageHeader tag="Scholar Identity" title="Your Account Profile" />
 
         <motion.div variants={item}>
-          <GlassCard className="relative overflow-hidden p-6 sm:p-8">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/[0.06] blur-[80px]" />
+          <GlassCard glowColor="dual" className="relative overflow-hidden p-6 sm:p-8 border-purple-500/30">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/15 blur-[80px]" />
 
             <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent-cyan text-3xl font-black text-white shadow-neon-primary">
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-purple-600 font-heading text-3xl font-extrabold text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                   {user.displayName.charAt(0).toUpperCase()}
                 </div>
-                <div className="absolute -inset-1.5 rounded-2xl border border-primary/20 animate-pulse-glow" />
+                <div className="absolute -inset-1.5 rounded-2xl border border-emerald-400/40 animate-pulse" />
               </div>
 
               <div className="flex-1">
-                <h2 className="text-2xl font-black text-white">{user.displayName}</h2>
-                <p className="mt-1 text-sm text-gray-400">{user.email}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-xs text-primary-light">
+                <h2 className="font-heading text-2xl font-extrabold text-white text-gradient-emerald-purple">{user.displayName}</h2>
+                <p className="font-mono mt-1 text-xs text-purple-300/80">{user.email}</p>
+                <div className="mt-3 flex flex-wrap gap-2 font-mono">
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-0.5 text-xs text-emerald-300">
                     Class {user.className}
                   </span>
-                  <span className="rounded-full border border-accent-cyan/20 bg-accent-cyan/10 px-3 py-0.5 text-xs text-accent-cyan">
+                  <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-0.5 text-xs text-purple-300">
                     {user.exam}
                   </span>
                 </div>
               </div>
 
-              <NeonButton variant="outline" glowColor="magenta" onClick={clearSession}>
-                <LogOut size={16} /> Sign out
+              <NeonButton variant="outline" glowColor="purple" onClick={clearSession}>
+                <LogOut size={16} /> Sign Out
               </NeonButton>
             </div>
           </GlassCard>
         </motion.div>
 
         <motion.div variants={item}>
-          <GlassCard className="p-6">
+          <GlassCard glowColor="purple" className="p-6 border-purple-500/30">
             <XpBar xp={xp} level={level} />
           </GlassCard>
         </motion.div>
 
-        <motion.div variants={item} className="grid gap-4 sm:grid-cols-3">
-          <GlassCard className="p-5 text-center" glowColor="amber">
-            <div className="text-3xl font-black text-accent-amber">{streak}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">Day Streak</div>
+        <motion.div variants={item} className="grid gap-4 sm:grid-cols-3 font-mono">
+          <GlassCard className="p-5 text-center border-amber-500/30" glowColor="amber">
+            <div className="font-heading text-3xl font-extrabold text-amber-400">{streak}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-wider text-purple-300/70">Daily Fire Streak</div>
           </GlassCard>
-          <GlassCard className="p-5 text-center" glowColor="primary">
-            <div className="text-3xl font-black text-primary-light">{level}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">Level</div>
+          <GlassCard className="p-5 text-center border-emerald-500/30" glowColor="emerald">
+            <div className="font-heading text-3xl font-extrabold text-emerald-400">{level}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-wider text-emerald-300/70">Mastery Level</div>
           </GlassCard>
-          <GlassCard className="p-5 text-center" glowColor="magenta">
-            <div className="text-3xl font-black text-accent-magenta">{disciplineScore}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">Discipline</div>
+          <GlassCard className="p-5 text-center border-purple-500/30" glowColor="purple">
+            <div className="font-heading text-3xl font-extrabold text-purple-300">{disciplineScore}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-wider text-purple-300/70">Discipline Points</div>
           </GlassCard>
         </motion.div>
       </motion.div>
@@ -160,68 +160,68 @@ export default function ProfilePage() {
 
   // Auth form view
   return (
-    <motion.div initial="hidden" animate="show" variants={v} className="mx-auto max-w-lg space-y-6">
-      <PageHeader tag="Authentication" title="Welcome to StudyOS" subtitle="Sign in to unlock personalized study plans, quizzes, and AI coaching." />
+    <motion.div initial="hidden" animate="show" variants={v} className="mx-auto max-w-lg space-y-6 theme-profile">
+      <PageHeader tag="Scholar Access" title="Welcome to StudyOS v1.0.1" subtitle="Sign in to unlock personalized study plans, live quiz arenas, and AI coaching." />
 
       <motion.div variants={item}>
-        <GlassCard className="p-6">
+        <GlassCard glowColor="purple" className="p-6 border-purple-500/30">
           {/* Tab switcher */}
-          <div className="mb-6 flex rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
+          <div className="mb-6 flex rounded-xl border border-purple-500/20 bg-purple-950/20 p-1 font-heading">
             {(["login", "register"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(""); }}
-                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
-                  tab === t ? "bg-primary/15 text-primary-light" : "text-gray-500 hover:text-gray-300"
+                className={`flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                  tab === t ? "bg-purple-600/30 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]" : "text-purple-300/70 hover:text-white"
                 }`}
               >
-                {t === "login" ? "Sign In" : "Register"}
+                {t === "login" ? "Sign In" : "Register Account"}
               </button>
             ))}
           </div>
 
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-            <label className="block text-sm text-gray-300">
-              <div className="flex items-center gap-2 mb-2"><Mail size={14} /> Email</div>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-orbital" placeholder="your@email.com" />
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 font-mono text-xs">
+            <label className="block text-purple-200">
+              <div className="flex items-center gap-2 mb-2 font-heading text-xs font-bold uppercase text-purple-300"><Mail size={14} className="text-emerald-400" /> Email Address</div>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-orbital" placeholder="scholar@studyos.ai" />
             </label>
 
-            <label className="block text-sm text-gray-300">
-              <div className="flex items-center gap-2 mb-2"><Lock size={14} /> Password</div>
+            <label className="block text-purple-200">
+              <div className="flex items-center gap-2 mb-2 font-heading text-xs font-bold uppercase text-purple-300"><Lock size={14} className="text-purple-400" /> Password</div>
               <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input-orbital" placeholder="••••••••" />
             </label>
 
             {tab === "register" && (
               <>
-                <label className="block text-sm text-gray-300">
-                  <div className="flex items-center gap-2 mb-2"><User size={14} /> Class</div>
+                <label className="block text-purple-200">
+                  <div className="flex items-center gap-2 mb-2 font-heading text-xs font-bold uppercase text-purple-300"><User size={14} className="text-cyan-400" /> Class / Batch</div>
                   <input value={className} onChange={(e) => setClassName(e.target.value)} className="input-orbital" />
                 </label>
-                <label className="block text-sm text-gray-300">
-                  Target Exam
-                  <select value={exam} onChange={(e) => setExam(e.target.value)} className="select-orbital mt-2">
+                <label className="block text-purple-200">
+                  <div className="flex items-center gap-2 mb-2 font-heading text-xs font-bold uppercase text-purple-300">Target Exam Stream</div>
+                  <select value={exam} onChange={(e) => setExam(e.target.value)} className="select-orbital">
                     {exams.map((ex) => (
-                      <option key={ex.slug} value={ex.name} className="bg-surface">{ex.name}</option>
+                      <option key={ex.slug} value={ex.name} className="bg-[#0E0919]">{ex.name}</option>
                     ))}
-                    {exams.length === 0 && <option className="bg-surface">JEE Main</option>}
+                    {exams.length === 0 && <option className="bg-[#0E0919]">JEE Main</option>}
                   </select>
                 </label>
               </>
             )}
 
             {error && (
-              <div className="rounded-xl border border-accent-red/20 bg-accent-red/[0.05] p-3 text-sm text-accent-red">{error}</div>
+              <div className="rounded-lg border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-300">{error}</div>
             )}
 
-            <NeonButton type="submit" className="w-full" loading={loading}>
-              {tab === "login" ? "Sign In" : "Create Account"}
+            <NeonButton type="submit" variant="solid" glowColor="emerald" className="w-full text-xs font-bold py-3 mt-2" loading={loading}>
+              {tab === "login" ? "Sign In to StudyOS" : "Create Scholar Account"}
             </NeonButton>
           </form>
 
-          <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/[0.06]" />
-            <span className="text-[10px] uppercase tracking-wider text-gray-500">or</span>
-            <div className="h-px flex-1 bg-white/[0.06]" />
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-purple-500/20" />
+            <span className="font-mono text-[10px] uppercase tracking-wider text-purple-300/70">OR</span>
+            <div className="h-px flex-1 bg-purple-500/20" />
           </div>
 
           <div className="space-y-3">
@@ -231,13 +231,13 @@ export default function ProfilePage() {
               onCredential={handleGoogleCredential}
             />
             {googleLoading && (
-              <div className="flex items-center gap-2 text-xs text-accent-cyan">
+              <div className="flex items-center gap-2 font-mono text-xs text-emerald-400">
                 <ShieldCheck size={14} className="animate-pulse" />
                 Verifying Google Credential...
               </div>
             )}
-            <NeonButton variant="outline" glowColor="amber" className="w-full" onClick={() => void handleDemoLogin()} loading={demoLoading}>
-              <Zap size={14} /> Try Demo Account
+            <NeonButton variant="solid" glowColor="purple" className="w-full text-xs" onClick={() => void handleDemoLogin()} loading={demoLoading}>
+              <Zap size={14} /> Launch Live Demo Scholar Account
             </NeonButton>
           </div>
         </GlassCard>

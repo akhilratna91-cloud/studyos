@@ -17,7 +17,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-surface/90 backdrop-blur-2xl md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-purple-500/20 bg-[#0E0919]/90 backdrop-blur-2xl md:hidden">
       <div className="flex h-16 items-center justify-around px-2">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
@@ -28,19 +28,19 @@ export function MobileNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-200",
+                "flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-all duration-200",
                 isActive
-                  ? "text-primary-light"
-                  : "text-gray-500 hover:text-gray-300",
+                  ? "text-emerald-400 font-semibold"
+                  : "text-purple-300/60 hover:text-purple-200",
               )}
             >
               <div className="relative">
-                <Icon size={20} />
+                <Icon size={20} className={isActive ? "text-emerald-400" : "text-purple-400/70"} />
                 {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary shadow-neon-primary" />
+                  <div className="absolute -bottom-1.5 left-1/2 h-1 w-3 -translate-x-1/2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                 )}
               </div>
-              <span className="text-[10px] font-medium">{item.name}</span>
+              <span className="text-[10px] font-heading tracking-wider uppercase">{item.name}</span>
             </Link>
           );
         })}

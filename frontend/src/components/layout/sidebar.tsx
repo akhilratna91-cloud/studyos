@@ -18,23 +18,24 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/user-store";
 import { useState } from "react";
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Today", href: "/today", icon: CalendarCheck },
-  { name: "Planner", href: "/planner", icon: CalendarPlus },
-  { name: "Learn", href: "/learn", icon: PlayCircle },
-  { name: "Quiz", href: "/quiz", icon: Brain },
-  { name: "PYQ", href: "/pyq", icon: FileText },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "AI Coach", href: "/coach", icon: Sparkles },
-  { name: "Sessions", href: "/sessions", icon: Timer },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Profile", href: "/profile", icon: User },
+  { name: "Dashboard", href: "/", icon: Home, themeColor: "from-emerald-500 to-purple-600" },
+  { name: "Today", href: "/today", icon: CalendarCheck, themeColor: "from-emerald-500 to-lime-500" },
+  { name: "Planner", href: "/planner", icon: CalendarPlus, themeColor: "from-purple-500 to-pink-500" },
+  { name: "Learn", href: "/learn", icon: PlayCircle, themeColor: "from-cyan-500 to-emerald-500" },
+  { name: "Quiz", href: "/quiz", icon: Brain, themeColor: "from-purple-600 to-rose-500" },
+  { name: "PYQ", href: "/pyq", icon: FileText, themeColor: "from-emerald-500 to-amber-500" },
+  { name: "Analytics", href: "/analytics", icon: BarChart3, themeColor: "from-indigo-500 to-purple-500" },
+  { name: "AI Coach", href: "/coach", icon: Sparkles, themeColor: "from-emerald-400 to-purple-400" },
+  { name: "Sessions", href: "/sessions", icon: Timer, themeColor: "from-purple-500 to-rose-500" },
+  { name: "Calendar", href: "/calendar", icon: Calendar, themeColor: "from-teal-500 to-purple-500" },
+  { name: "Profile", href: "/profile", icon: User, themeColor: "from-emerald-500 to-purple-600" },
 ];
 
 export function Sidebar() {
@@ -45,35 +46,40 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-50 hidden h-screen flex-col border-r border-white/[0.06] bg-surface/90 backdrop-blur-2xl transition-all duration-300 md:flex",
+        "fixed left-0 top-0 z-50 hidden h-screen flex-col border-r border-purple-500/20 bg-[#0E0919]/90 backdrop-blur-2xl transition-all duration-300 md:flex",
         collapsed ? "w-[4.5rem]" : "w-64",
       )}
     >
-      {/* Brand */}
+      {/* Brand Logo */}
       <div className="flex h-20 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
-          <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/15 bg-white/5">
-            <span className="font-editorial text-xs font-bold text-white">s</span>
+          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-purple-600/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <Zap size={20} className="text-emerald-400 animate-pulse" />
           </div>
           {!collapsed && (
-            <motion.span
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="font-editorial text-sm font-bold tracking-[0.1em] uppercase text-white"
+              className="flex flex-col"
             >
-              StudyOS
-            </motion.span>
+              <span className="font-heading text-base font-extrabold tracking-wider text-gradient-emerald-purple">
+                StudyOS
+              </span>
+              <span className="font-mono text-[9px] font-semibold tracking-widest text-purple-400/80 uppercase">
+                v1.0.1 AI Core
+              </span>
+            </motion.div>
           )}
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-white/[0.05] hover:text-white lg:flex"
+          className="hidden rounded-lg p-1.5 text-purple-400 transition-colors hover:bg-purple-500/10 hover:text-white lg:flex"
         >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation Links */}
       <nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-2 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -83,24 +89,33 @@ export function Sidebar() {
             <Link key={item.name} href={item.href} className="relative block">
               {isActive && (
                 <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-[4px] bg-white/[0.04] border border-white/10"
+                  layoutId="sidebar-active-gradient"
+                  className={cn(
+                    "absolute inset-0 rounded-lg bg-gradient-to-r opacity-20 border border-emerald-400/40 shadow-[0_0_15px_rgba(168,85,247,0.25)]",
+                    item.themeColor,
+                  )}
                   transition={{ type: "spring", stiffness: 350, damping: 30 }}
                 />
               )}
 
               <div
                 className={cn(
-                  "relative flex items-center gap-3 rounded-[4px] px-3 py-2.5 transition-all duration-200 z-10",
+                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 z-10",
                   collapsed && "justify-center px-0",
                   isActive
-                    ? "text-white font-medium"
-                    : "text-gray-400 hover:text-white hover:bg-white/[0.03]",
+                    ? "text-white font-semibold"
+                    : "text-purple-300/70 hover:text-white hover:bg-purple-500/10",
                 )}
               >
-                <Icon size={18} className="flex-shrink-0" />
+                <Icon
+                  size={19}
+                  className={cn(
+                    "flex-shrink-0 transition-colors duration-200",
+                    isActive ? "text-emerald-400" : "text-purple-400/80",
+                  )}
+                />
                 {!collapsed && (
-                  <span className="text-xs uppercase tracking-wider">{item.name}</span>
+                  <span className="text-xs uppercase tracking-wider font-heading">{item.name}</span>
                 )}
               </div>
             </Link>
@@ -108,29 +123,29 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom widget */}
+      {/* Streak & XP Widget */}
       <div className={cn("p-3 mb-3", collapsed && "px-2")}>
-        <div className="rounded-[4px] border border-white/[0.06] bg-white/[0.02] p-3">
+        <div className="rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/40 via-emerald-950/20 to-purple-950/40 p-3 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[4px] border border-white/10 bg-white/[0.04]">
-              <Flame size={15} className="text-white" />
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
+              <Flame size={18} className="text-amber-400 animate-pulse" />
             </div>
             {!collapsed && (
               <div>
-                <div className="font-editorial text-[9px] uppercase tracking-wider text-gray-500">
-                  streak
+                <div className="font-mono text-[9px] uppercase tracking-wider text-purple-300/70">
+                  Daily Streak
                 </div>
-                <div className="font-editorial flex items-baseline gap-1 font-bold text-white">
-                  <span className="text-sm">{streak}</span>
-                  <span className="text-[9px] font-normal text-gray-500">days</span>
+                <div className="font-heading flex items-baseline gap-1 font-bold text-white">
+                  <span className="text-sm text-amber-300">{streak}</span>
+                  <span className="text-[10px] font-normal text-purple-300/70">days fire</span>
                 </div>
               </div>
             )}
           </div>
           {!collapsed && (
-            <div className="font-editorial mt-3 flex items-center justify-between text-[9px] text-gray-500">
-              <span>lvl {level}</span>
-              <span>{xp.toLocaleString()} xp</span>
+            <div className="font-mono mt-3 flex items-center justify-between text-[10px] font-medium text-emerald-400">
+              <span>LVL {level}</span>
+              <span className="text-purple-300">{xp.toLocaleString()} XP</span>
             </div>
           )}
         </div>

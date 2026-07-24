@@ -43,14 +43,14 @@ function buildSearchUrl(
 
 function difficultyClasses(level: ChapterSummary["difficulty"] | TopicSummary["difficulty"]) {
   if (level === "easy") {
-    return "border-accent-emerald/20 bg-accent-emerald/10 text-accent-emerald";
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
   }
 
   if (level === "hard") {
-    return "border-accent-red/20 bg-accent-red/10 text-accent-red";
+    return "border-rose-500/30 bg-rose-500/10 text-rose-400";
   }
 
-  return "border-accent-amber/20 bg-accent-amber/10 text-accent-amber";
+  return "border-amber-500/30 bg-amber-500/10 text-amber-400";
 }
 
 export default function LearnPage() {
@@ -62,7 +62,7 @@ export default function LearnPage() {
   const [selectedExamSlug, setSelectedExamSlug] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedChapterId, setSelectedChapterId] = useState("");
-  const [status, setStatus] = useState("Loading syllabus explorer...");
+  const [status, setStatus] = useState("Loading syllabus map...");
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
@@ -83,7 +83,7 @@ export default function LearnPage() {
         startTransition(() => {
           setExams(examList);
           setSelectedExamSlug(suggestedExam?.slug || "");
-          setStatus("Live syllabus map loaded. Choose a chapter and start learning.");
+          setStatus("Syllabus map initialized. Choose a subject and chapter to explore.");
         });
       } catch (error) {
         if (!active) return;
@@ -103,17 +103,17 @@ export default function LearnPage() {
 
     async function loadSubjects() {
       try {
-        const nextSubjects = await listSubjectsByExam(selectedExamSlug);
+        const list = await listSubjectsByExam(selectedExamSlug);
         if (!active) return;
+
         startTransition(() => {
-          setSubjects(nextSubjects);
-          setSelectedSubjectId(getId(nextSubjects[0]));
+          setSubjects(list);
+          const firstSubId = getId(list[0]);
+          setSelectedSubjectId(firstSubId);
         });
       } catch (error) {
         if (!active) return;
-        setSubjects([]);
-        setSelectedSubjectId("");
-        setStatus(error instanceof Error ? `Subject load failed: ${error.message}` : "Subject load failed.");
+        setStatus(error instanceof Error ? error.message : "Failed to load subjects.");
       }
     }
 
@@ -127,17 +127,17 @@ export default function LearnPage() {
 
     async function loadChapters() {
       try {
-        const nextChapters = await listChaptersBySubject(selectedSubjectId);
+        const list = await listChaptersBySubject(selectedSubjectId);
         if (!active) return;
+
         startTransition(() => {
-          setChapters(nextChapters);
-          setSelectedChapterId(getId(nextChapters[0]));
+          setChapters(list);
+          const firstChapId = getId(list[0]);
+          setSelectedChapterId(firstChapId);
         });
       } catch (error) {
         if (!active) return;
-        setChapters([]);
-        setSelectedChapterId("");
-        setStatus(error instanceof Error ? `Chapter load failed: ${error.message}` : "Chapter load failed.");
+        setStatus(error instanceof Error ? error.message : "Failed to load chapters.");
       }
     }
 
@@ -151,15 +151,15 @@ export default function LearnPage() {
 
     async function loadTopics() {
       try {
-        const nextTopics = await listTopicsByChapter(selectedChapterId);
+        const list = await listTopicsByChapter(selectedChapterId);
         if (!active) return;
+
         startTransition(() => {
-          setTopics(nextTopics);
+          setTopics(list);
         });
       } catch (error) {
         if (!active) return;
-        setTopics([]);
-        setStatus(error instanceof Error ? `Topic load failed: ${error.message}` : "Topic load failed.");
+        setStatus(error instanceof Error ? error.message : "Failed to load topics.");
       }
     }
 
@@ -168,295 +168,245 @@ export default function LearnPage() {
   }, [selectedChapterId, startTransition]);
 
   const selectedExam = useMemo(
-    () => exams.find((exam) => exam.slug === selectedExamSlug) || null,
+    () => exams.find((item) => item.slug === selectedExamSlug) || exams[0],
     [exams, selectedExamSlug],
   );
+
   const selectedSubject = useMemo(
-    () => subjects.find((subject) => getId(subject) === selectedSubjectId) || null,
+    () => subjects.find((item) => getId(item) === selectedSubjectId) || subjects[0],
     [subjects, selectedSubjectId],
   );
+
   const selectedChapter = useMemo(
-    () => chapters.find((chapter) => getId(chapter) === selectedChapterId) || null,
+    () => chapters.find((item) => getId(item) === selectedChapterId) || chapters[0],
     [chapters, selectedChapterId],
   );
 
-  const lectureTracks = useMemo(() => {
-    if (!selectedExam || !selectedSubject || !selectedChapter) return [];
-    return [
-      {
-        title: "Foundation lecture",
-        duration: "48 min",
-        focus: "Concept build and chapter theory",
-        href: buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "full lecture"),
-      },
-      {
-        title: "Problem sprint",
-        duration: "32 min",
-        focus: "Numericals, PYQ logic, and shortcuts",
-        href: buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "problems PYQ"),
-      },
-      {
-        title: "Revision one-shot",
-        duration: "18 min",
-        focus: "Quick recap before a test or revision day",
-        href: buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "revision one shot"),
-      },
-    ];
-  }, [selectedChapter, selectedExam, selectedSubject]);
-
-  const topicHighlights = useMemo(() => topics.slice(0, 4).map((t) => t.name), [topics]);
-  const difficultTopics = useMemo(() => topics.filter((t) => t.difficulty === "hard").map((t) => t.name).slice(0, 3), [topics]);
-
-  if (!hasHydrated || loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <OrbitLoader size="lg" />
-      </div>
-    );
+  if (!hasHydrated || loading || isPending) {
+    return <div className="flex min-h-[60vh] items-center justify-center"><OrbitLoader size="lg" /></div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 theme-learn">
       <PageHeader
-        tag="Learn module"
-        title="Syllabus Explorer"
+        tag="Syllabus Navigation"
+        title="Interactive Learn Matrix"
         subtitle={status}
-        action={
-          <GlassCard className="p-3">
-            <select
-              value={selectedExamSlug}
-              onChange={(event) => setSelectedExamSlug(event.target.value)}
-              className="select-orbital"
-            >
-              {exams.map((exam) => (
-                <option key={exam.slug} value={exam.slug} className="bg-surface">
-                  {exam.name}
-                </option>
-              ))}
-            </select>
-          </GlassCard>
-        }
       />
 
-      {/* Subjects */}
-      <GlassCard className="p-3">
-        <div className="flex flex-wrap gap-2">
-          {subjects.map((subject) => {
-            const active = getId(subject) === selectedSubjectId;
-            return (
+      {/* Exam Switcher */}
+      <GlassCard glowColor="cyan" className="p-4 border-cyan-500/30">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wider text-cyan-300">
+            <Sparkles size={16} className="text-emerald-400" /> Exam Syllabus Stream
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {exams.map((exam) => (
               <button
-                key={getId(subject) || subject.slug}
-                type="button"
-                onClick={() => setSelectedSubjectId(getId(subject))}
-                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all ${
-                  active
-                    ? "border-primary/30 bg-primary/10 text-primary-light"
-                    : "border-white/[0.06] bg-white/[0.02] text-gray-400 hover:text-white"
+                key={exam.slug}
+                onClick={() => setSelectedExamSlug(exam.slug)}
+                className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-all ${
+                  selectedExamSlug === exam.slug
+                    ? "border border-cyan-400/50 bg-cyan-500/20 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                    : "border border-purple-500/20 bg-purple-950/20 text-purple-300/70 hover:text-white"
                 }`}
               >
-                {subject.name}
+                {exam.name}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </GlassCard>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        {/* Chapters list */}
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-semibold text-white">Chapters</div>
-            <span className="text-xs text-gray-500">
-              {isPending ? "Refreshing..." : `${chapters.length} total`}
-            </span>
-          </div>
+      {/* Main Grid: Subjects & Chapters sidebar vs Details */}
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        {/* Left Column: Subjects & Chapter List */}
+        <div className="space-y-4">
+          {/* Subjects */}
+          <GlassCard glowColor="cyan" className="p-4 border-cyan-500/25">
+            <div className="text-xs font-heading font-bold uppercase tracking-wider text-cyan-300 mb-3">
+              Subjects
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {subjects.map((sub) => {
+                const subId = getId(sub);
+                const isSel = subId === selectedSubjectId;
 
-          <div className="space-y-2">
-            {chapters.map((chapter) => {
-              const active = getId(chapter) === selectedChapterId;
-              return (
-                <button
-                  key={getId(chapter) || chapter.slug}
-                  type="button"
-                  onClick={() => setSelectedChapterId(getId(chapter))}
-                  className={`w-full rounded-xl border p-4 text-left transition-all ${
-                    active
-                      ? "border-primary/30 bg-primary/[0.04]"
-                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-white">{chapter.name}</div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-500">
-                        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                          {chapter.weightage || 0}% weight
-                        </span>
-                        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                          {chapter.estimatedHours || 0} hrs
-                        </span>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider ${difficultyClasses(
-                        chapter.difficulty,
-                      )}`}
-                    >
-                      {chapter.difficulty}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </GlassCard>
-
-        {/* Selected Chapter Details */}
-        <div className="space-y-6">
-          {selectedExam && selectedSubject && selectedChapter ? (
-            <>
-              <GlassCard className="p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-light">
-                      {selectedExam.name} • {selectedSubject.name}
-                    </div>
-                    <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white">
-                      {selectedChapter.name}
-                    </h2>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-400">
-                      Learn through guided track sprints, study resources, and targeted roadmap items.
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs uppercase font-bold tracking-widest ${difficultyClasses(
-                      selectedChapter.difficulty,
-                    )}`}
+                return (
+                  <button
+                    key={subId}
+                    onClick={() => setSelectedSubjectId(subId)}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-all text-center ${
+                      isSel
+                        ? "border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                        : "border-purple-500/20 bg-purple-950/20 text-purple-300/70 hover:text-white"
+                    }`}
                   >
+                    {sub.name}
+                  </button>
+                );
+              })}
+            </div>
+          </GlassCard>
+
+          {/* Chapters List */}
+          <GlassCard glowColor="emerald" className="p-4 border-emerald-500/25">
+            <div className="text-xs font-heading font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center justify-between">
+              <span>Chapters</span>
+              <span className="font-mono text-[10px] text-purple-300">{chapters.length} Modules</span>
+            </div>
+            <div className="no-scrollbar max-h-[500px] space-y-2 overflow-y-auto pr-1">
+              {chapters.map((chap) => {
+                const chapId = getId(chap);
+                const isSel = chapId === selectedChapterId;
+
+                return (
+                  <div
+                    key={chapId}
+                    onClick={() => setSelectedChapterId(chapId)}
+                    className={`cursor-pointer rounded-lg border p-3 transition-all ${
+                      isSel
+                        ? "border-emerald-400 bg-emerald-950/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        : "border-purple-500/20 bg-purple-950/10 hover:border-purple-400/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white">{chap.name}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[9px] uppercase font-mono font-bold ${difficultyClasses(chap.difficulty)}`}>
+                        {chap.difficulty}
+                      </span>
+                    </div>
+                    <div className="font-mono mt-2 flex items-center justify-between text-[10px] text-purple-300/70">
+                      <span>{chap.estimatedHours || 5} Hours</span>
+                      <span>Weightage: {chap.weightage || 10}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Right Column: Selected Chapter Focus & Video Stream Launcher */}
+        <div className="space-y-6">
+          {selectedChapter ? (
+            <>
+              <GlassCard glowColor="emerald" className="p-6 border-emerald-500/30">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
+                  <div>
+                    <div className="font-mono text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+                      {selectedExam?.name} • {selectedSubject?.name}
+                    </div>
+                    <h3 className="font-heading text-xl font-extrabold text-white text-gradient-cyan-emerald mt-1">
+                      {selectedChapter.name}
+                    </h3>
+                  </div>
+                  <span className={`self-start sm:self-auto rounded-full border px-3 py-1 text-xs uppercase font-mono font-bold ${difficultyClasses(selectedChapter.difficulty)}`}>
                     {selectedChapter.difficulty}
                   </span>
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {[
-                    { label: "Weightage", value: `${selectedChapter.weightage || 0}%` },
-                    { label: "Study Load", value: `${selectedChapter.estimatedHours || 0} hrs` },
-                    { label: "Topics", value: topics.length },
-                  ].map((stat) => (
-                    <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
-                      <div className="text-[10px] uppercase tracking-wider text-gray-500">{stat.label}</div>
-                      <div className="mt-1 text-xl font-bold text-white">{stat.value}</div>
-                    </div>
-                  ))}
+                {/* External Video Search Launchers */}
+                <div className="mt-6 space-y-3">
+                  <div className="text-xs font-heading font-bold uppercase tracking-wider text-cyan-300">
+                    Curated Video Stream Sources
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {selectedExam && selectedSubject && (
+                      <>
+                        <a
+                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "full lecture JEE NEET")}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <NeonButton variant="solid" glowColor="cyan" className="w-full text-xs">
+                            <PlayCircle size={15} /> Search Full Lecture Streams
+                          </NeonButton>
+                        </a>
+
+                        <a
+                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "one shot revision concept")}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <NeonButton variant="outline" glowColor="emerald" className="w-full text-xs">
+                            <BookOpenText size={15} /> One-Shot Concept Revision
+                          </NeonButton>
+                        </a>
+                      </>
+                    )}
+                  </div>
                 </div>
               </GlassCard>
 
-              {/* Lecture tracks */}
-              <div className="grid gap-4 lg:grid-cols-3">
-                {lectureTracks.map((track) => (
-                  <GlassCard key={track.title} className="p-5" glowColor="cyan">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-cyan">
-                      <PlayCircle size={14} />
-                      {track.title}
-                    </div>
-                    <div className="mt-4 text-xl font-black text-white">{track.duration}</div>
-                    <p className="mt-2 text-xs leading-relaxed text-gray-400">{track.focus}</p>
-                    <a href={track.href} target="_blank" rel="noreferrer" className="mt-4 block">
-                      <NeonButton glowColor="cyan" className="w-full text-xs py-2">
-                        <Sparkles size={12} /> Search
-                      </NeonButton>
-                    </a>
-                  </GlassCard>
-                ))}
-              </div>
-
-              {/* Grid lists */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
-                    <BookOpenText size={16} className="text-primary-light" />
-                    Concepts Highlight
+              {/* Sub-topics breakdown */}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <GlassCard glowColor="emerald" className="p-5 border-emerald-500/25">
+                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-emerald-400 mb-4">
+                    <FileText size={16} /> Syllabus Coverage
                   </div>
                   <div className="space-y-2">
-                    {topicHighlights.map((item) => (
-                      <div key={item} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
-                        {item}
+                    {topics.slice(0, 4).map((t) => (
+                      <div key={t.slug} className="font-mono rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-2.5 text-xs text-emerald-200 truncate">
+                        {t.name}
                       </div>
                     ))}
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
-                    <FileText size={16} className="text-accent-cyan" />
-                    Revision Strategy
+                <GlassCard glowColor="cyan" className="p-5 border-cyan-500/25">
+                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-cyan-300 mb-4">
+                    <Target size={16} /> Practice Protocol
                   </div>
                   <div className="space-y-2">
-                    {(difficultTopics.length ? difficultTopics : topicHighlights).map((item) => (
-                      <div key={item} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
-                        Solve formula drill for {item}.
+                    {topics.slice(0, 4).map((t, idx) => (
+                      <div key={t.slug} className="font-mono rounded-lg border border-cyan-500/20 bg-cyan-950/20 p-2.5 text-xs text-cyan-200">
+                        Set {idx + 1}: {t.name} • {t.estimatedMinutes || 30}m
                       </div>
                     ))}
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
-                    <Target size={16} className="text-accent-amber" />
-                    Daily Practice Protocol
-                  </div>
-                  <div className="space-y-2">
-                    {topics.slice(0, 4).map((topic, index) => (
-                      <div key={topic.slug} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
-                        Set {index + 1}: {topic.name} • {topic.estimatedMinutes || 30}m
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white mb-4">
-                    <Layers3 size={16} className="text-accent-magenta" />
-                    Focus Assignment
+                <GlassCard glowColor="purple" className="p-5 border-purple-500/25">
+                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-purple-300 mb-4">
+                    <Layers3 size={16} /> Focus Priority
                   </div>
                   <div className="space-y-2">
                     {topics
                       .slice()
                       .sort((a, b) => (b.weightage || 0) - (a.weightage || 0))
                       .slice(0, 4)
-                      .map((topic) => (
-                        <div key={`${topic.slug}-assignment`} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-gray-300">
-                          {topic.name} • priority {topic.weightage || 0}%
+                      .map((t) => (
+                        <div key={`${t.slug}-priority`} className="font-mono rounded-lg border border-purple-500/20 bg-purple-950/20 p-2.5 text-xs text-purple-200">
+                          {t.name} • {t.weightage || 0}% weight
                         </div>
                       ))}
                   </div>
                 </GlassCard>
               </div>
 
-              {/* Topic roadmap */}
-              <GlassCard className="p-5">
-                <div className="text-sm font-semibold text-white mb-4">Topic Roadmap</div>
-                <div className="space-y-2">
-                  {topics.map((topic) => (
-                    <div key={topic.slug} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              {/* Topic Detailed Roadmap */}
+              <GlassCard glowColor="purple" className="p-6 border-purple-500/25">
+                <div className="text-xs font-heading font-bold uppercase tracking-wider text-purple-300 mb-4">
+                  Detailed Topic Breakdown
+                </div>
+                <div className="space-y-3">
+                  {topics.map((t) => (
+                    <div key={t.slug} className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-4 transition-all hover:border-purple-400/40">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <div className="text-sm font-semibold text-white">{topic.name}</div>
-                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-500">
-                            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                              {topic.estimatedMinutes || 30} min
+                          <div className="text-sm font-semibold text-white">{t.name}</div>
+                          <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px] text-purple-300/70">
+                            <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5">
+                              {t.estimatedMinutes || 30} mins
                             </span>
-                            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                              {topic.weightage || 0}% focus
+                            <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
+                              {t.weightage || 0}% focus
                             </span>
                           </div>
                         </div>
-                        <span
-                          className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider sm:self-center self-start ${difficultyClasses(
-                            topic.difficulty,
-                          )}`}
-                        >
-                          {topic.difficulty}
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-mono font-bold self-start sm:self-center ${difficultyClasses(t.difficulty)}`}>
+                          {t.difficulty}
                         </span>
                       </div>
                     </div>
@@ -465,8 +415,8 @@ export default function LearnPage() {
               </GlassCard>
             </>
           ) : (
-            <GlassCard className="p-6 text-center text-sm text-gray-500">
-              No chapter selected.
+            <GlassCard className="p-6 text-center text-sm text-purple-300">
+              Select a chapter from the left menu to view learning topics and resources.
             </GlassCard>
           )}
         </div>

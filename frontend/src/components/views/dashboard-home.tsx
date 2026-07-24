@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Target,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
@@ -145,41 +146,47 @@ export default function DashboardHome() {
       initial="hidden"
       animate="show"
       variants={containerVariants}
-      className="space-y-6"
+      className="space-y-6 theme-dashboard"
     >
-      {/* ─── Hero ─── */}
+      {/* ─── Hero Card ─── */}
       <motion.div variants={itemVariants}>
-        <GlassCard className="relative overflow-hidden p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-primary/[0.08] blur-[80px]" />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-accent-cyan/[0.06] blur-[60px]" />
+        <GlassCard glowColor="dual" className="relative overflow-hidden p-6 sm:p-8 border-purple-500/30">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-purple-500/15 blur-[80px]" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-emerald-500/15 blur-[60px]" />
 
-          <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+          <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_300px] lg:items-center">
             {/* Left Column — Text & Progress */}
             <div className="space-y-6">
               <div>
-                <h1 className="font-editorial text-2xl font-bold uppercase tracking-wider text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={16} className="text-emerald-400" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 font-semibold">
+                    AI Flow OS v1.0.1
+                  </span>
+                </div>
+                <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-white text-gradient-emerald-purple">
                   Welcome back, {user?.displayName || "Scholar"}
                 </h1>
-                <p className="mt-2 text-xs leading-relaxed text-gray-400 italic">
+                <p className="mt-2 text-xs leading-relaxed text-purple-200/80 italic font-medium">
                   &ldquo;{quote}&rdquo;
                 </p>
 
                 {demoMode && (
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <NeonButton
-                      variant="outline"
-                      glowColor="primary"
+                      variant="solid"
+                      glowColor="emerald"
                       onClick={handleDemoLogin}
                       loading={demoLoading}
                     >
-                      <Zap size={13} /> Try Demo
+                      <Zap size={13} /> Try Live Demo Mode
                     </NeonButton>
                     <NeonButton
-                      variant="ghost"
-                      glowColor="cyan"
+                      variant="outline"
+                      glowColor="purple"
                       onClick={() => router.push("/profile")}
                     >
-                      Sign in
+                      Account Sign In
                     </NeonButton>
                   </div>
                 )}
@@ -188,15 +195,15 @@ export default function DashboardHome() {
               <XpBar xp={xp} level={level} />
             </div>
 
-            {/* Right Column — 3D Globe center panel */}
+            {/* Right Column — Interactive 3D Globe */}
             <div className="relative flex h-60 w-full items-center justify-center lg:h-64">
               <ThreeDModel />
               
-              {/* Floating API status */}
-              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-[2px] border border-white/10 bg-black/60 px-3 py-1">
-                <div className={`h-1.5 w-1.5 rounded-full ${health ? "bg-white" : "bg-accent-red"}`} />
-                <span className="font-editorial text-[9px] text-gray-400 font-semibold tracking-wider uppercase">
-                  {health ? "link // active" : "offline"}
+              {/* Floating Status Pill */}
+              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-950/60 px-3 py-1 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                <div className={`h-2 w-2 rounded-full ${health ? "bg-emerald-400 animate-pulse" : "bg-rose-500"}`} />
+                <span className="font-mono text-[9px] text-emerald-300 font-semibold tracking-wider uppercase">
+                  {health ? "System Online" : "Offline"}
                 </span>
               </div>
             </div>
@@ -207,34 +214,34 @@ export default function DashboardHome() {
       {/* ─── Stats Grid ─── */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon={<Clock3 size={18} />}
+          icon={<Clock3 size={18} className="text-emerald-400" />}
           label="Study Hours"
           value={studyHours.toFixed(1)}
           suffix="hrs"
           trend="Today"
           trendUp
-          color="amber"
+          color="emerald"
         />
         <StatCard
-          icon={<Target size={18} />}
+          icon={<Target size={18} className="text-purple-400" />}
           label="Completion"
           value={completionRate}
+          suffix="%"
+          color="purple"
+        />
+        <StatCard
+          icon={<ShieldCheck size={18} className="text-cyan-400" />}
+          label="Accuracy"
+          value={accuracy}
           suffix="%"
           color="cyan"
         />
         <StatCard
-          icon={<ShieldCheck size={18} />}
-          label="Accuracy"
-          value={accuracy}
-          suffix="%"
-          color="primary"
-        />
-        <StatCard
-          icon={<Activity size={18} />}
+          icon={<Activity size={18} className="text-emerald-400" />}
           label="Discipline"
           value={disciplineScore}
           suffix="pts"
-          color="magenta"
+          color="emerald"
         />
       </motion.div>
 
@@ -242,44 +249,50 @@ export default function DashboardHome() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Chart */}
         <motion.div variants={itemVariants}>
-          <GlassCard className="flex h-full flex-col p-6">
-            <h3 className="font-editorial mb-6 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500">
-              [ 01 // PERFORMANCE VELOCITY ]
-            </h3>
+          <GlassCard glowColor="emerald" className="flex h-full flex-col p-6 border-emerald-500/25">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                <Activity size={15} /> Weekly Velocity Graph
+              </h3>
+              <span className="font-mono text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                Score Matrix
+              </span>
+            </div>
+            
             <div className="min-h-[250px] flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={weeklyData}>
                   <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
+                    <linearGradient id="colorScoreGreenPurple" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#121212",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: "2px",
-                      fontSize: "11px",
-                      fontFamily: "var(--font-editorial)"
+                      backgroundColor: "#0E0919",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "#F3F4F6"
                     }}
-                    itemStyle={{ color: "#FFFFFF", fontWeight: "bold" }}
+                    itemStyle={{ color: "#10b981", fontWeight: "bold" }}
                   />
                   <XAxis
                     dataKey="day"
-                    stroke="#525252"
+                    stroke="#9CA3AF"
                     tickLine={false}
                     axisLine={false}
-                    fontSize={10}
-                    className="font-editorial"
+                    fontSize={11}
+                    className="font-mono"
                   />
                   <Area
                     type="monotone"
                     dataKey="score"
-                    stroke="#FFFFFF"
-                    strokeWidth={1.5}
+                    stroke="#10b981"
+                    strokeWidth={2.5}
                     fillOpacity={1}
-                    fill="url(#colorScore)"
+                    fill="url(#colorScoreGreenPurple)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -290,35 +303,35 @@ export default function DashboardHome() {
         {/* Side panel */}
         <motion.div variants={itemVariants} className="space-y-4">
           {/* AI Recommendation */}
-          <GlassCard variant="default" className="relative overflow-hidden p-5">
+          <GlassCard glowColor="purple" className="relative overflow-hidden p-5 border-purple-500/30">
             <div className="relative z-10">
-              <div className="font-editorial mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
-                [ 02 // AI COACH INSIGHT ]
+              <div className="font-heading mb-3 text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-2">
+                <Sparkles size={15} className="text-purple-400" /> AI Coach Advice
               </div>
-              <p className="text-xs leading-relaxed text-gray-400">
+              <p className="text-xs leading-relaxed text-purple-100/90 font-medium">
                 {analytics?.weak_chapters?.length
-                  ? <>Focus on <span className="font-semibold text-white border-b border-dashed border-white/40">{analytics.weak_chapters[0]}</span> — your accuracy needs improvement here.</>
-                  : "Keep up the momentum! Your consistency is building real skill."}
+                  ? <>Target <span className="font-bold text-emerald-300 border-b border-dashed border-emerald-400">{analytics.weak_chapters[0]}</span> today to boost your accuracy and master weak spots.</>
+                  : "Excellent streak! Keep building consistent study momentum."}
               </p>
               <NeonButton
-                variant="ghost"
-                glowColor="cyan"
-                className="mt-4 w-full bg-white/5 border border-white/10 text-[10px]"
+                variant="outline"
+                glowColor="purple"
+                className="mt-4 w-full text-xs"
                 onClick={() => router.push("/coach")}
               >
-                View full analysis <ChevronRight size={12} />
+                View AI Coach Insights <ChevronRight size={14} />
               </NeonButton>
             </div>
           </GlassCard>
 
-          {/* Today&rsquo;s Tasks */}
-          <GlassCard className="p-5">
+          {/* Today's Tasks Protocol */}
+          <GlassCard glowColor="emerald" className="p-5 border-emerald-500/30">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-editorial text-[10px] font-bold uppercase tracking-[0.15em] text-white">
-                [ 03 // TODAY&apos;S PROTOCOL ]
+              <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Today&apos;s Protocol
               </h3>
-              <span className="font-editorial rounded-[2px] border border-white/10 bg-white/5 px-2.5 py-0.5 text-[9px] text-gray-400">
-                {todayTasks.filter((t) => t.status !== "completed").length} left
+              <span className="font-mono rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
+                {todayTasks.filter((t) => t.status !== "completed").length} Tasks Left
               </span>
             </div>
 
@@ -330,31 +343,31 @@ export default function DashboardHome() {
                 return (
                   <div
                     key={taskId}
-                    className={`group flex items-center gap-3 rounded-[2px] border p-3 transition-all duration-200 ${
+                    className={`group flex items-center gap-3 rounded-lg border p-3 transition-all duration-200 ${
                       isCompleted
-                        ? "border-white/10 bg-white/[0.02]"
-                        : "border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.01]"
+                        ? "border-purple-500/20 bg-purple-950/20 opacity-75"
+                        : "border-emerald-500/20 bg-emerald-950/20 hover:border-emerald-400/50"
                     }`}
                   >
                     <div
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] border ${
+                      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border transition-colors ${
                         isCompleted
-                          ? "border-white bg-white text-black"
-                          : "border-gray-600"
+                          ? "border-emerald-400 bg-emerald-500 text-black"
+                          : "border-purple-400/60 bg-purple-900/30"
                       }`}
                     >
-                      {isCompleted && <CheckCircle2 size={10} />}
+                      {isCompleted && <CheckCircle2 size={12} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div
                         className={`text-xs font-semibold truncate ${
-                          isCompleted ? "text-gray-600 line-through" : "text-gray-300"
+                          isCompleted ? "text-purple-300/50 line-through" : "text-white"
                         }`}
                       >
                         {task.chapterName}
                       </div>
-                      <div className="font-editorial text-[9px] text-gray-500">
-                        {task.subjectName} • {task.durationMinutes}m
+                      <div className="font-mono text-[10px] text-purple-300/70">
+                        {task.subjectName} • {task.durationMinutes} mins
                       </div>
                     </div>
                   </div>
@@ -362,20 +375,20 @@ export default function DashboardHome() {
               })}
 
               {todayTasks.length === 0 && (
-                <div className="font-editorial rounded-[2px] border border-dashed border-white/[0.08] p-4 text-center text-xs text-gray-500">
-                  No tasks today. Generate a plan first!
+                <div className="font-mono rounded-lg border border-dashed border-purple-500/30 p-4 text-center text-xs text-purple-300">
+                  No active tasks yet. Generate your study plan to start!
                 </div>
               )}
             </div>
 
             {todayTasks.length > 0 && (
               <NeonButton
-                variant="ghost"
-                glowColor="primary"
-                className="mt-3 w-full text-[10px]"
+                variant="solid"
+                glowColor="emerald"
+                className="mt-4 w-full text-xs"
                 onClick={() => router.push("/today")}
               >
-                View all tasks <ChevronRight size={12} />
+                Execute Today Tasks <ChevronRight size={14} />
               </NeonButton>
             )}
           </GlassCard>

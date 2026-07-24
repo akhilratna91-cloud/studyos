@@ -70,8 +70,8 @@ export default function PyqPage() {
           setSelectedExamSlug(suggestedExam?.slug || "");
           setStatus(
             token
-              ? "Tagged previous year questions are ready. Pick a year and start solving."
-              : "Sign in to open the PYQ bank and verification engine.",
+              ? "Previous year questions ready. Filter by year or subject and verify answers instantly."
+              : "Sign in from Profile to access the PYQ question bank and verification engine.",
           );
         });
       } catch (error) {
@@ -99,7 +99,7 @@ export default function PyqPage() {
           setSelectedSubjectId("all");
           setSelectedChapterId("all");
         });
-      } catch (error) {
+      } catch {
         if (!active) return;
         setSubjects([]);
       }
@@ -126,7 +126,7 @@ export default function PyqPage() {
           setChapters(nextChapters);
           setSelectedChapterId("all");
         });
-      } catch (error) {
+      } catch {
         if (!active) return;
         setChapters([]);
       }
@@ -141,268 +141,237 @@ export default function PyqPage() {
     [exams, selectedExamSlug],
   );
 
-  const selectedSubject = useMemo(
-    () => subjects.find((subject) => getId(subject) === selectedSubjectId) || null,
-    [subjects, selectedSubjectId],
-  );
+  useEffect(() => {
+    if (!token || !selectedExam) return;
+    let active = true;
 
-  const selectedChapter = useMemo(
-    () => chapters.find((chapter) => getId(chapter) === selectedChapterId) || null,
-    [chapters, selectedChapterId],
-  );
+    async function fetchStats() {
+      try {
+        const examId = getId(selectedExam);
+        const data = await getQuestionStats(token!, examId);
+        if (active) setStats(data);
+      } catch {
+        // fallback
+      }
+    }
 
-  const filteredQuestions = useMemo(() => {
-    return questions.filter((question) => {
-      const subjectPass = selectedSubject ? question.subjectName === selectedSubject.name : true;
-      const chapterPass = selectedChapter ? question.chapterName === selectedChapter.name : true;
-      return subjectPass && chapterPass;
-    });
-  }, [questions, selectedSubject, selectedChapter]);
+    void fetchStats();
+    return () => { active = false; };
+  }, [token, selectedExam]);
 
-  async function loadPyqs() {
-    if (!token || !selectedExam) {
-      setStatus("Sign in to load the live PYQ bank.");
+  async function handleSearch() {
+    if (!token) {
+      router.push("/profile");
       return;
     }
 
+    const tags = [selectedYear, selectedExamSlug].filter(Boolean);
+    if (selectedSubjectId !== "all") {
+      const sub = subjects.find((s) => getId(s) === selectedSubjectId);
+      if (sub) tags.push(sub.name.toLowerCase());
+    }
+
+    setStatus("Querying PYQ database...");
     try {
-      const yearTag = `${selectedExam.slug}-${selectedYear}`;
-      let pyqQuestions = await searchQuestionsByTags(token, [yearTag], getId(selectedExam));
-
-      if (pyqQuestions.length === 0) {
-        pyqQuestions = await searchQuestionsByTags(token, ["pyq"], getId(selectedExam));
-      }
-
-      const questionStats = await getQuestionStats(token, getId(selectedExam));
-      setQuestions(pyqQuestions);
-      setStats(questionStats);
+      const items = await searchQuestionsByTags(token, tags);
+      setQuestions(items);
       setResults({});
-      setStatus(`Loaded ${pyqQuestions.length} PYQs for ${selectedExam.name}.`);
+      setStatus(`Retrieved ${items.length} PYQ items for ${selectedYear}.`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not load PYQs.");
+      setStatus(error instanceof Error ? error.message : "Search failed.");
     }
   }
 
-  async function handleVerify(question: QuestionBankItem, answerIndex: number) {
-    if (!token) {
-      setStatus("Sign in to verify PYQ answers.");
-      return;
-    }
+  async function handleVerify(q: QuestionBankItem, optionIndex: number) {
+    if (!token) return;
+    const qId = getId(q);
+    if (!qId) return;
 
     try {
-      const result = await verifyQuestionAnswer(token, getId(question), answerIndex);
-      setResults((current) => ({
-        ...current,
-        [getId(question)]: {
-          selectedAnswer: answerIndex,
-          isCorrect: result.isCorrect,
-          correctAnswer: result.correctAnswer,
-          explanation: result.explanation,
-          successRate: result.successRate,
+      const res = await verifyQuestionAnswer(token, qId, optionIndex);
+      setResults((prev) => ({
+        ...prev,
+        [qId]: {
+          selectedAnswer: optionIndex,
+          isCorrect: res.isCorrect,
+          correctAnswer: res.correctAnswer,
+          explanation: res.explanation,
+          successRate: res.successRate,
         },
       }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not verify answer.");
+      setStatus(error instanceof Error ? error.message : "Verification failed.");
     }
   }
 
-  if (!hasHydrated || loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <OrbitLoader size="lg" />
-      </div>
-    );
+  if (!hasHydrated || loading || isPending) {
+    return <div className="flex min-h-[60vh] items-center justify-center"><OrbitLoader size="lg" /></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        tag="PYQ module"
-        title="Previous Year Practice Lane"
-        subtitle={status}
-        action={
-          !token ? (
-            <NeonButton onClick={() => router.push("/profile")}>
-              <Sparkles size={16} /> Sign in for PYQs
-            </NeonButton>
-          ) : undefined
-        }
-      />
+    <div className="space-y-6 theme-pyq">
+      <PageHeader tag="PYQ Bank" title="Previous Year Question Vault" subtitle={status} />
 
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        {/* Finder filters */}
-        <div className="space-y-6">
-          <GlassCard className="p-5">
-            <div className="text-sm font-semibold text-white mb-4">PYQ Finder</div>
-            <div className="space-y-4">
-              <label className="block text-sm text-gray-300">
-                Exam
-                <select
-                  value={selectedExamSlug}
-                  onChange={(e) => setSelectedExamSlug(e.target.value)}
-                  className="select-orbital mt-2"
-                >
-                  {exams.map((exam) => (
-                    <option key={exam.slug} value={exam.slug} className="bg-surface">
-                      {exam.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-sm text-gray-300">
-                Year
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="select-orbital mt-2"
-                >
-                  {["2024", "2023", "2022", "2021"].map((year) => (
-                    <option key={year} value={year} className="bg-surface">
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-sm text-gray-300">
-                Subject filter
-                <select
-                  value={selectedSubjectId}
-                  onChange={(e) => setSelectedSubjectId(e.target.value)}
-                  className="select-orbital mt-2"
-                >
-                  <option value="all" className="bg-surface">All subjects</option>
-                  {subjects.map((subject) => (
-                    <option key={getId(subject)} value={getId(subject)} className="bg-surface">
-                      {subject.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-sm text-gray-300">
-                Chapter filter
-                <select
-                  value={selectedChapterId}
-                  onChange={(e) => setSelectedChapterId(e.target.value)}
-                  className="select-orbital mt-2"
-                >
-                  <option value="all" className="bg-surface">All chapters</option>
-                  {chapters.map((chapter) => (
-                    <option key={getId(chapter)} value={getId(chapter)} className="bg-surface">
-                      {chapter.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <NeonButton onClick={() => void loadPyqs()} className="w-full">
-                <FileSearch size={16} /> Load PYQs
-              </NeonButton>
-            </div>
+      {/* Stats Summary */}
+      {stats && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 font-mono">
+          <GlassCard glowColor="emerald" className="p-4 border-emerald-500/30">
+            <div className="text-[10px] uppercase text-emerald-400">Total Questions</div>
+            <div className="font-heading mt-1 text-xl font-bold text-white">{stats.grandTotal}</div>
           </GlassCard>
+          <GlassCard glowColor="amber" className="p-4 border-amber-500/30">
+            <div className="text-[10px] uppercase text-amber-400">Subjects Tracked</div>
+            <div className="font-heading mt-1 text-xl font-bold text-amber-300">{stats.subjects?.length || 3}</div>
+          </GlassCard>
+          <GlassCard glowColor="emerald" className="p-4 border-emerald-500/30">
+            <div className="text-[10px] uppercase text-emerald-400">Difficulty Spectrum</div>
+            <div className="font-heading mt-1 text-xl font-bold text-white">Mixed</div>
+          </GlassCard>
+          <GlassCard glowColor="purple" className="p-4 border-purple-500/30">
+            <div className="text-[10px] uppercase text-purple-300">Target Stream</div>
+            <div className="font-heading mt-1 text-xl font-bold text-purple-200">{selectedExam?.name || "JEE Main"}</div>
+          </GlassCard>
+        </div>
+      )}
 
-          <div className="grid gap-4 grid-cols-2">
-            <GlassCard className="p-4 text-center animate-float" glowColor="cyan">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-accent-cyan">
-                <Brain size={14} /> Total Bank
-              </div>
-              <div className="mt-2 text-2xl font-black text-white">{stats?.grandTotal || 0}</div>
-            </GlassCard>
-            <GlassCard className="p-4 text-center animate-float" style={{ animationDelay: "-3s" }} glowColor="amber">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-accent-amber">
-                <Target size={14} /> Filtered PYQs
-              </div>
-              <div className="mt-2 text-2xl font-black text-white">{filteredQuestions.length}</div>
-            </GlassCard>
-          </div>
+      {/* Filter Panel */}
+      <GlassCard glowColor="amber" className="p-6 border-amber-500/30">
+        <div className="flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wider text-amber-400 mb-4">
+          <Sparkles size={16} /> PYQ Search Matrix
         </div>
 
-        {/* Question board */}
-        <GlassCard className="p-5">
-          <div className="text-sm font-semibold text-white mb-4">PYQ Review Board</div>
-          <div className="space-y-4 max-h-[600px] overflow-y-auto no-scrollbar">
-            {filteredQuestions.length ? (
-              filteredQuestions.map((question, index) => {
-                const result = results[getId(question)];
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-xs font-semibold text-amber-200">
+            Exam Category
+            <select value={selectedExamSlug} onChange={(e) => setSelectedExamSlug(e.target.value)} className="select-orbital mt-1.5">
+              {exams.map((ex) => (
+                <option key={ex.slug} value={ex.slug} className="bg-[#0E0919]">{ex.name}</option>
+              ))}
+            </select>
+          </label>
 
-                return (
-                  <div key={getId(question)} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
-                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
-                      <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                        {question.subjectName}
+          <label className="text-xs font-semibold text-amber-200">
+            Target Year
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="select-orbital mt-1.5">
+              {["2024", "2023", "2022", "2021", "2020"].map((yr) => (
+                <option key={yr} value={yr} className="bg-[#0E0919]">Year {yr}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-semibold text-amber-200">
+            Subject Filter
+            <select value={selectedSubjectId} onChange={(e) => setSelectedSubjectId(e.target.value)} className="select-orbital mt-1.5">
+              <option value="all" className="bg-[#0E0919]">All Subjects</option>
+              {subjects.map((sub) => (
+                <option key={getId(sub)} value={getId(sub)} className="bg-[#0E0919]">{sub.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-semibold text-amber-200">
+            Chapter Filter
+            <select value={selectedChapterId} onChange={(e) => setSelectedChapterId(e.target.value)} className="select-orbital mt-1.5">
+              <option value="all" className="bg-[#0E0919]">All Chapters</option>
+              {chapters.map((chap) => (
+                <option key={getId(chap)} value={getId(chap)} className="bg-[#0E0919]">{chap.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <NeonButton variant="solid" glowColor="amber" onClick={() => void handleSearch()}>
+            <FileSearch size={16} /> Fetch PYQ Questions
+          </NeonButton>
+        </div>
+      </GlassCard>
+
+      {/* Results List */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+            <Target size={16} /> Retrieved PYQ Items ({questions.length})
+          </h3>
+        </div>
+
+        <div className="grid gap-4">
+          {questions.map((q, qIdx) => {
+            const qId = getId(q);
+            const verify = results[qId];
+
+            return (
+              <GlassCard key={qId || qIdx} glowColor={verify?.isCorrect ? "emerald" : "amber"} className="p-6 border-amber-500/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3 mb-4">
+                  <div className="font-mono text-xs font-semibold text-amber-300">
+                    {selectedYear} • {selectedExam?.name || "PYQ"} • {q.subjectName || "Core"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {q.tags?.map((t) => (
+                      <span key={t} className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] text-amber-200">
+                        #{t}
                       </span>
-                      <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5">
-                        {question.chapterName}
-                      </span>
-                      {question.tags?.slice(0, 2).map((tag) => (
-                        <span key={tag} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary-light">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    ))}
+                  </div>
+                </div>
 
-                    <div className="text-sm font-semibold leading-relaxed text-gray-200">
-                      Q{index + 1}. {question.question}
-                    </div>
+                <p className="text-base font-medium leading-relaxed text-white">
+                  {q.question}
+                </p>
 
-                    <div className="space-y-2">
-                      {question.options.map((option, optionIndex) => {
-                        const active = result?.selectedAnswer === optionIndex;
-                        const correct = result?.correctAnswer === optionIndex;
+                <div className="mt-6 space-y-2.5">
+                  {q.options.map((opt, optIdx) => {
+                    const isSelected = verify?.selectedAnswer === optIdx;
+                    const isCorrect = verify?.correctAnswer === optIdx;
 
-                        return (
-                          <button
-                            key={optionIndex}
-                            type="button"
-                            onClick={() => void handleVerify(question, optionIndex)}
-                            className={`w-full rounded-xl border p-3.5 text-left text-xs transition-all ${
-                              correct
-                                ? "border-accent-emerald/30 bg-accent-emerald/10 text-white font-semibold"
-                                : active
-                                  ? "border-primary/40 bg-primary/10 text-primary-light font-semibold"
-                                  : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
-                            }`}
-                          >
-                            {option.label}. {option.text}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {result && (
-                      <div
-                        className={`rounded-xl border p-4 text-xs leading-relaxed ${
-                          result.isCorrect
-                            ? "border-accent-emerald/20 bg-accent-emerald/5 text-gray-300"
-                            : "border-accent-red/20 bg-accent-red/5 text-gray-300"
+                    return (
+                      <button
+                        key={optIdx}
+                        onClick={() => void handleVerify(q, optIdx)}
+                        className={`w-full rounded-lg border p-4 text-left font-mono text-xs transition-all ${
+                          verify
+                            ? isCorrect
+                              ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                              : isSelected
+                                ? "border-rose-500/40 bg-rose-950/30 text-rose-300"
+                                : "border-purple-500/10 bg-purple-950/10 text-purple-300/60"
+                            : "border-purple-500/20 bg-purple-950/20 text-purple-200 hover:border-amber-400/50 hover:bg-amber-950/20"
                         }`}
                       >
-                        <div className={`flex items-center gap-1.5 font-bold ${result.isCorrect ? "text-accent-emerald" : "text-accent-red"}`}>
-                          <CheckCircle2 size={14} />
-                          {result.isCorrect ? "Correct answer" : "Incorrect answer"}
-                        </div>
-                        <div className="mt-2 text-[10px] text-gray-500">
-                          Community Success Rate: {result.successRate}%
-                        </div>
-                        {result.explanation && (
-                          <div className="mt-2 text-gray-400">
-                            <span className="font-bold text-gray-200">Explanation:</span> {result.explanation}
-                          </div>
-                        )}
-                      </div>
+                        <span className="font-bold text-amber-400 mr-2">{opt.label}.</span> {opt.text}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {verify && (
+                  <div className={`mt-4 rounded-lg border p-4 font-mono text-xs ${verify.isCorrect ? "border-emerald-400/40 bg-emerald-950/30 text-emerald-200" : "border-rose-500/40 bg-rose-950/30 text-rose-200"}`}>
+                    <div className="flex items-center gap-2 font-bold mb-1">
+                      {verify.isCorrect ? (
+                        <>
+                          <CheckCircle2 size={16} className="text-emerald-400" /> Correct Verification! (+25 XP)
+                        </>
+                      ) : (
+                        <>
+                          <Brain size={16} className="text-rose-400" /> Incorrect Option Selected
+                        </>
+                      )}
+                    </div>
+                    {verify.explanation && (
+                      <p className="mt-2 text-purple-200/90">{verify.explanation}</p>
                     )}
                   </div>
-                );
-              })
-            ) : (
-              <div className="text-center text-xs text-gray-500 py-8">
-                Load a year-tagged PYQ bank from the left panel to begin.
-              </div>
-            )}
-          </div>
-        </GlassCard>
+                )}
+              </GlassCard>
+            );
+          })}
+
+          {questions.length === 0 && (
+            <GlassCard className="p-8 text-center text-xs font-mono text-amber-300/70 border-amber-500/20">
+              Click &quot;Fetch PYQ Questions&quot; above to search the question bank.
+            </GlassCard>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export function ThreeDModel() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.z = 8;
+    camera.position.z = 8.5;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -26,33 +26,33 @@ export function ThreeDModel() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Group to hold all objects for rotation/tilting
+    // Main Group
     const mainGroup = new THREE.Group();
     scene.add(mainGroup);
 
-    // 1. Core Sphere (Hologram Wireframe)
-    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+    // 1. Inner Core Sphere (Electric Purple Hologram Wireframe)
+    const sphereGeometry = new THREE.SphereGeometry(2.1, 36, 36);
     const sphereMaterial = new THREE.MeshBasicMaterial({
-      color: 0x6366f1, // primary color (#6366F1)
+      color: 0xa855f7, // Vivid Purple
       wireframe: true,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.22,
     });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
     mainGroup.add(sphereMesh);
 
-    // 2. Glowing inner points
+    // 2. Glowing Inner Points (Emerald Green)
     const spherePointsMaterial = new THREE.PointsMaterial({
-      color: 0x22d3ee, // cyan accent (#22D3EE)
-      size: 0.04,
+      color: 0x10b981, // Emerald Green
+      size: 0.045,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.85,
     });
     const spherePoints = new THREE.Points(sphereGeometry, spherePointsMaterial);
     mainGroup.add(spherePoints);
 
-    // 3. Orbiting Satellites/Debris Particles (Zajno Space Pollution vibe)
-    const particleCount = 120;
+    // 3. Orbiting Particles (Green & Purple Hybrid Cloud)
+    const particleCount = 180;
     const particleGeometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -60,26 +60,20 @@ export function ThreeDModel() {
     const radii: number[] = [];
     const angles: number[] = [];
     const inclinationY: number[] = [];
-    const inclinationZ: number[] = [];
 
-    const cyanColor = new THREE.Color(0x22d3ee);
-    const magentaColor = new THREE.Color(0xec4899);
-    const indigoColor = new THREE.Color(0x6366f1);
+    const emeraldColor = new THREE.Color(0x10b981);
+    const purpleColor = new THREE.Color(0xa855f7);
+    const glowGreenColor = new THREE.Color(0x00ff9d);
+    const glowPurpleColor = new THREE.Color(0xd8b4fe);
 
     for (let i = 0; i < particleCount; i++) {
-      // Radii between 2.4 (just outside sphere) and 4.2
-      const radius = 2.4 + Math.random() * 1.8;
+      const radius = 2.5 + Math.random() * 2.2;
       radii.push(radius);
 
-      // Random speed and angle
-      speeds.push((0.005 + Math.random() * 0.01) * (Math.random() > 0.5 ? 1 : -1));
+      speeds.push((0.004 + Math.random() * 0.008) * (Math.random() > 0.5 ? 1 : -1));
       angles.push(Math.random() * Math.PI * 2);
+      inclinationY.push((Math.random() - 0.5) * 0.8);
 
-      // Random orbital inclinations
-      inclinationY.push((Math.random() - 0.5) * 0.6);
-      inclinationZ.push((Math.random() - 0.5) * 0.6);
-
-      // Calculate starting position
       const x = radius * Math.cos(angles[i]);
       const y = radius * Math.sin(angles[i]) * Math.sin(inclinationY[i]);
       const z = radius * Math.sin(angles[i]) * Math.cos(inclinationY[i]);
@@ -88,15 +82,16 @@ export function ThreeDModel() {
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
 
-      // Color mix (cyan, magenta, indigo)
       const mixedColor = new THREE.Color();
       const rand = Math.random();
-      if (rand < 0.33) {
-        mixedColor.copy(cyanColor);
-      } else if (rand < 0.66) {
-        mixedColor.copy(magentaColor);
+      if (rand < 0.35) {
+        mixedColor.copy(emeraldColor);
+      } else if (rand < 0.7) {
+        mixedColor.copy(purpleColor);
+      } else if (rand < 0.85) {
+        mixedColor.copy(glowGreenColor);
       } else {
-        mixedColor.copy(indigoColor);
+        mixedColor.copy(glowPurpleColor);
       }
 
       colors[i * 3] = mixedColor.r;
@@ -108,7 +103,7 @@ export function ThreeDModel() {
     particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 0.08,
+      size: 0.095,
       vertexColors: true,
       transparent: true,
       opacity: 0.9,
@@ -117,23 +112,30 @@ export function ThreeDModel() {
     const particles = new THREE.Points(particleGeometry, particleMaterial);
     mainGroup.add(particles);
 
-    // 4. Subtle outer ring
-    const ringGeometry = new THREE.RingGeometry(2.3, 2.32, 64);
-    const ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0xec4899, // magenta accent (#EC4899)
+    // 4. Dual Interlocking 3D Rings
+    const ring1Geometry = new THREE.RingGeometry(2.5, 2.53, 64);
+    const ring1Material = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.35,
     });
-    const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-    ringMesh.rotation.x = Math.PI / 2;
-    mainGroup.add(ringMesh);
+    const ring1Mesh = new THREE.Mesh(ring1Geometry, ring1Material);
+    ring1Mesh.rotation.x = Math.PI / 3;
+    mainGroup.add(ring1Mesh);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
+    const ring2Geometry = new THREE.RingGeometry(2.8, 2.83, 64);
+    const ring2Material = new THREE.MeshBasicMaterial({
+      color: 0xa855f7,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35,
+    });
+    const ring2Mesh = new THREE.Mesh(ring2Geometry, ring2Material);
+    ring2Mesh.rotation.y = Math.PI / 4;
+    mainGroup.add(ring2Mesh);
 
-    // Mouse movement variables
+    // Mouse movement interactive 3D tilt
     let mouseX = 0;
     let mouseY = 0;
     let targetX = 0;
@@ -143,8 +145,8 @@ export function ThreeDModel() {
       const rect = renderer.domElement.getBoundingClientRect();
       const x = event.clientX - rect.left - width / 2;
       const y = event.clientY - rect.top - height / 2;
-      mouseX = (x / (width / 2)) * 0.5;
-      mouseY = (y / (height / 2)) * 0.5;
+      mouseX = (x / (width / 2)) * 0.6;
+      mouseY = (y / (height / 2)) * 0.6;
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -155,25 +157,22 @@ export function ThreeDModel() {
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      // Rotate globe
-      sphereMesh.rotation.y += 0.002;
-      spherePoints.rotation.y += 0.002;
-      ringMesh.rotation.z -= 0.001;
+      sphereMesh.rotation.y += 0.0025;
+      spherePoints.rotation.y += 0.0025;
+      ring1Mesh.rotation.z += 0.003;
+      ring2Mesh.rotation.z -= 0.002;
 
-      // Animate orbiting particles
       const positionsArr = particles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         angles[i] += speeds[i];
-
         positionsArr[i * 3] = radii[i] * Math.cos(angles[i]);
         positionsArr[i * 3 + 1] = radii[i] * Math.sin(angles[i]) * Math.sin(inclinationY[i]);
         positionsArr[i * 3 + 2] = radii[i] * Math.sin(angles[i]) * Math.cos(inclinationY[i]);
       }
       particles.geometry.attributes.position.needsUpdate = true;
 
-      // Parallax hover effect (smooth interpolation)
-      targetX += (mouseX - targetX) * 0.05;
-      targetY += (mouseY - targetY) * 0.05;
+      targetX += (mouseX - targetX) * 0.06;
+      targetY += (mouseY - targetY) * 0.06;
       mainGroup.rotation.y = targetX;
       mainGroup.rotation.x = targetY;
 
@@ -182,8 +181,8 @@ export function ThreeDModel() {
 
     animate();
 
-    // Resize Handler
     const handleResize = () => {
+      if (!container) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
       camera.aspect = w / h;
@@ -194,22 +193,22 @@ export function ThreeDModel() {
     const resizeObserver = new ResizeObserver(() => handleResize());
     resizeObserver.observe(container);
 
-    // Cleanup
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
-      if (container) {
+      if (container && renderer.domElement.parentNode === container) {
         container.removeChild(renderer.domElement);
       }
-      // dispose geometries/materials
       sphereGeometry.dispose();
       sphereMaterial.dispose();
       spherePointsMaterial.dispose();
       particleGeometry.dispose();
       particleMaterial.dispose();
-      ringGeometry.dispose();
-      ringMaterial.dispose();
+      ring1Geometry.dispose();
+      ring1Material.dispose();
+      ring2Geometry.dispose();
+      ring2Material.dispose();
       renderer.dispose();
     };
   }, []);
@@ -217,7 +216,7 @@ export function ThreeDModel() {
   return (
     <div
       ref={mountRef}
-      className="relative flex h-full w-full items-center justify-center min-h-[300px]"
+      className="relative flex h-full w-full items-center justify-center min-h-[320px]"
     />
   );
 }
