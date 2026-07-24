@@ -78,7 +78,7 @@ export default function CalendarPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-calendar">
-      <PageHeader tag="Consistency Engine" title="Study Consistency Calendar" subtitle="Log daily study activity and build unbroken fire streaks." />
+      <PageHeader tag="Consistency Engine (Teal & Purple Blend)" title="Study Consistency Calendar" subtitle="Log daily study activity and build unbroken fire streaks." />
 
       {/* Action Header */}
       <motion.div variants={item}>

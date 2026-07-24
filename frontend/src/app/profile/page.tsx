@@ -99,7 +99,7 @@ export default function ProfilePage() {
   if (token && user) {
     return (
       <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-profile">
-        <PageHeader tag="Scholar Identity" title="Your Account Profile" />
+        <PageHeader tag="Scholar Identity (Emerald & Purple Blend)" title="Your Account Profile" />
 
         <motion.div variants={item}>
           <GlassCard glowColor="dual" className="relative overflow-hidden p-6 sm:p-8 border-purple-500/30">

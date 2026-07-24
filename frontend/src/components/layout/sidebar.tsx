@@ -38,23 +38,34 @@ const navItems = [
   { name: "Profile", href: "/profile", icon: User, themeColor: "from-emerald-500 to-purple-600" },
 ];
 
-export function Sidebar() {
+import { type PageThemeConfig } from "@/components/layout/app-shell";
+
+export function Sidebar({ activeTheme }: { activeTheme?: PageThemeConfig }) {
   const pathname = usePathname();
   const { streak, level, xp } = useUserStore();
   const [collapsed, setCollapsed] = useState(false);
 
+  const activeColor = activeTheme?.primary || "#10b981";
+
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-50 hidden h-screen flex-col border-r border-purple-500/20 bg-[#0E0919]/90 backdrop-blur-2xl transition-all duration-300 md:flex",
+        "fixed left-0 top-0 z-50 hidden h-screen flex-col border-r bg-[#0E0919]/90 backdrop-blur-2xl transition-all duration-500 md:flex",
         collapsed ? "w-[4.5rem]" : "w-64",
       )}
+      style={{ borderColor: activeTheme?.borderRgba || "rgba(16,185,129,0.3)" }}
     >
       {/* Brand Logo */}
       <div className="flex h-20 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 to-purple-600/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            <Zap size={20} className="text-emerald-400 animate-pulse" />
+          <div
+            className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border bg-gradient-to-br shadow-lg transition-colors duration-500"
+            style={{
+              borderColor: activeColor,
+              boxShadow: `0 0 15px ${activeTheme?.glowRgba || "rgba(16,185,129,0.3)"}`,
+            }}
+          >
+            <Zap size={20} style={{ color: activeColor }} className="animate-pulse" />
           </div>
           {!collapsed && (
             <motion.div
@@ -62,11 +73,19 @@ export function Sidebar() {
               animate={{ opacity: 1 }}
               className="flex flex-col"
             >
-              <span className="font-heading text-base font-extrabold tracking-wider text-gradient-emerald-purple">
+              <span
+                className="font-heading text-base font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r"
+                style={{
+                  backgroundImage: `linear-gradient(to right, ${activeTheme?.primary || "#10b981"}, ${activeTheme?.secondary || "#a855f7"})`,
+                }}
+              >
                 StudyOS
               </span>
-              <span className="font-mono text-[9px] font-semibold tracking-widest text-purple-400/80 uppercase">
-                v1.0.2 AI Matrix
+              <span
+                className="font-mono text-[9px] font-semibold tracking-widest uppercase"
+                style={{ color: activeColor }}
+              >
+                {activeTheme?.name || "v1.0.2 Matrix"}
               </span>
             </motion.div>
           )}

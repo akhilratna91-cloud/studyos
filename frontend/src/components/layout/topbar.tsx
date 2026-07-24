@@ -29,28 +29,47 @@ const pageTitles: Record<string, string> = {
   "/profile": "Account & Settings",
 };
 
-export function Topbar() {
+import { type PageThemeConfig } from "@/components/layout/app-shell";
+
+export function Topbar({ activeTheme }: { activeTheme?: PageThemeConfig }) {
   const pathname = usePathname();
   const { user, demoMode } = useUserStore();
   const greeting = getGreeting();
   const displayName = user?.displayName || "Scholar";
   const pageTitle = pageTitles[pathname] || "StudyOS";
 
+  const primaryColor = activeTheme?.primary || "#10b981";
+  const secondaryColor = activeTheme?.secondary || "#a855f7";
+
   return (
     <header className="fixed left-0 right-0 top-0 z-40 md:left-[4.5rem] lg:left-64">
-      <div className="border-b border-purple-500/20 bg-[#0E0919]/70 backdrop-blur-2xl transition-colors duration-500">
+      <div
+        className="border-b bg-[#0E0919]/70 backdrop-blur-2xl transition-colors duration-500"
+        style={{ borderColor: activeTheme?.borderRgba || "rgba(16,185,129,0.3)" }}
+      >
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left — Greeting & page title */}
           <div className="flex items-center gap-3">
-            <div className="h-7 w-1 rounded-full bg-gradient-to-b from-emerald-400 to-purple-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+            <div
+              className="h-7 w-1 rounded-full shadow-md transition-all duration-500"
+              style={{
+                backgroundImage: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})`,
+                boxShadow: `0 0 10px ${activeTheme?.glowRgba || "rgba(16,185,129,0.5)"}`,
+              }}
+            />
             <div>
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: primaryColor }}>
                 {greeting}
                 {!demoMode && (
                   <span className="text-purple-300">, {displayName}</span>
                 )}
               </p>
-              <h2 className="font-heading text-base font-bold uppercase tracking-wider text-white text-gradient-emerald-purple">
+              <h2
+                className="font-heading text-base font-bold uppercase tracking-wider bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+                }}
+              >
                 {pageTitle}
               </h2>
             </div>
@@ -58,9 +77,15 @@ export function Topbar() {
 
           {/* Right — Quick actions */}
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-[11px] font-medium text-purple-200 md:flex">
-              <ShieldCheck size={13} className="text-emerald-400" />
-              <span>v1.0.2 Active</span>
+            <div
+              className="hidden items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium text-white md:flex transition-colors duration-500"
+              style={{
+                borderColor: activeTheme?.borderRgba || "rgba(16,185,129,0.3)",
+                backgroundColor: `${activeTheme?.glowRgba || "rgba(16,185,129,0.1)"}`,
+              }}
+            >
+              <ShieldCheck size={13} style={{ color: primaryColor }} />
+              <span>{activeTheme?.name || "v1.0.2 Active"}</span>
             </div>
             
             <Link href="/sessions">

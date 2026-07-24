@@ -94,7 +94,7 @@ export default function TodayView() {
   return (
     <motion.div initial="hidden" animate="show" variants={containerVariants} className="space-y-6 theme-today">
       <PageHeader
-        tag="Execution Flow"
+        tag="Execution Flow (Green & Lime Blend)"
         title="Today's Mission Protocol"
         subtitle={dashboard?.motivation || "Execute with laser focus. Every task unlocks XP and mastery."}
       />
@@ -104,13 +104,13 @@ export default function TodayView() {
         <GlassCard glowColor="emerald" className="p-6 sm:p-8 border-emerald-500/30">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center sm:text-left">
-              <span className="font-mono text-xs font-semibold text-emerald-400 uppercase tracking-widest flex items-center justify-center sm:justify-start gap-2">
-                <Zap size={15} /> Daily Completion Target
+              <span className="font-mono text-xs font-semibold text-lime-400 uppercase tracking-widest flex items-center justify-center sm:justify-start gap-2">
+                <Zap size={15} className="text-emerald-400" /> Daily Completion Target (Green & Lime)
               </span>
-              <h3 className="font-heading text-3xl font-extrabold text-white text-gradient-emerald-purple">
+              <h3 className="font-heading text-3xl font-extrabold text-white bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent">
                 {completionPercent}% Completed
               </h3>
-              <p className="text-xs text-purple-200/80">
+              <p className="text-xs text-emerald-100/80">
                 {progress?.completed || 0} of {progress?.totalTasks || tasks.length} daily study modules finished
               </p>
             </div>

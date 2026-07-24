@@ -71,17 +71,17 @@ export default function SessionsPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-sessions">
-      <PageHeader tag="Deep Focus Engine" title="Flow State Session Timer" subtitle="Track your intense study sessions with precision and earn XP." />
+      <PageHeader tag="Deep Focus Engine (Purple & Rose Blend)" title="Flow State Session Timer" subtitle="Track your intense study sessions with precision and earn XP." />
 
       {/* Timer Cockpit */}
       <motion.div variants={item}>
         <GlassCard glowColor="purple" className="p-8 text-center border-purple-500/30">
           <div className="relative mx-auto h-48 w-48 flex items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 160 160">
-              <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(168,85,247,0.15)" strokeWidth="8" />
+              <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(139,92,246,0.15)" strokeWidth="8" />
               <circle
                 cx="80" cy="80" r="70" fill="none"
-                stroke={timerActive ? "#10b981" : "#a855f7"}
+                stroke={timerActive ? "#f43f5e" : "#8b5cf6"}
                 strokeWidth="8" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 70}
                 strokeDashoffset={timerActive ? 2 * Math.PI * 70 * (1 - Math.min(seconds / 1500, 1)) : 2 * Math.PI * 70}

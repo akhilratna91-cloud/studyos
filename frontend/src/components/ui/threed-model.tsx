@@ -3,7 +3,15 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export function ThreeDModel() {
+interface ThreeDModelProps {
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export function ThreeDModel({
+  primaryColor = "#ec4899", // Default Pink & Green Blend
+  secondaryColor = "#10b981",
+}: ThreeDModelProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -30,20 +38,23 @@ export function ThreeDModel() {
     const mainGroup = new THREE.Group();
     scene.add(mainGroup);
 
-    // 1. Inner Core Sphere (Electric Purple Hologram Wireframe)
+    const cPrimary = new THREE.Color(primaryColor);
+    const cSecondary = new THREE.Color(secondaryColor);
+
+    // 1. Inner Core Sphere (Hologram Wireframe using Primary Color)
     const sphereGeometry = new THREE.SphereGeometry(2.1, 36, 36);
     const sphereMaterial = new THREE.MeshBasicMaterial({
-      color: 0xa855f7, // Vivid Purple
+      color: cPrimary,
       wireframe: true,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.28,
     });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
     mainGroup.add(sphereMesh);
 
-    // 2. Glowing Inner Points (Emerald Green)
+    // 2. Glowing Inner Points (Secondary Color)
     const spherePointsMaterial = new THREE.PointsMaterial({
-      color: 0x10b981, // Emerald Green
+      color: cSecondary,
       size: 0.045,
       transparent: true,
       opacity: 0.85,
@@ -51,7 +62,7 @@ export function ThreeDModel() {
     const spherePoints = new THREE.Points(sphereGeometry, spherePointsMaterial);
     mainGroup.add(spherePoints);
 
-    // 3. Orbiting Particles (Green & Purple Hybrid Cloud)
+    // 3. Orbiting Particles (Primary & Secondary Blend Cloud)
     const particleCount = 180;
     const particleGeometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -60,11 +71,6 @@ export function ThreeDModel() {
     const radii: number[] = [];
     const angles: number[] = [];
     const inclinationY: number[] = [];
-
-    const emeraldColor = new THREE.Color(0x10b981);
-    const purpleColor = new THREE.Color(0xa855f7);
-    const glowGreenColor = new THREE.Color(0x00ff9d);
-    const glowPurpleColor = new THREE.Color(0xd8b4fe);
 
     for (let i = 0; i < particleCount; i++) {
       const radius = 2.5 + Math.random() * 2.2;
@@ -84,14 +90,10 @@ export function ThreeDModel() {
 
       const mixedColor = new THREE.Color();
       const rand = Math.random();
-      if (rand < 0.35) {
-        mixedColor.copy(emeraldColor);
-      } else if (rand < 0.7) {
-        mixedColor.copy(purpleColor);
-      } else if (rand < 0.85) {
-        mixedColor.copy(glowGreenColor);
+      if (rand < 0.5) {
+        mixedColor.copy(cPrimary);
       } else {
-        mixedColor.copy(glowPurpleColor);
+        mixedColor.copy(cSecondary);
       }
 
       colors[i * 3] = mixedColor.r;
@@ -103,22 +105,22 @@ export function ThreeDModel() {
     particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 0.095,
+      size: 0.075,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.75,
     });
 
     const particles = new THREE.Points(particleGeometry, particleMaterial);
     mainGroup.add(particles);
 
-    // 4. Dual Interlocking 3D Rings
-    const ring1Geometry = new THREE.RingGeometry(2.5, 2.53, 64);
+    // 4. Dual Orbiting Rings
+    const ring1Geometry = new THREE.RingGeometry(3.1, 3.13, 64);
     const ring1Material = new THREE.MeshBasicMaterial({
-      color: 0x10b981,
+      color: cSecondary,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.4,
     });
     const ring1Mesh = new THREE.Mesh(ring1Geometry, ring1Material);
     ring1Mesh.rotation.x = Math.PI / 3;
@@ -126,10 +128,10 @@ export function ThreeDModel() {
 
     const ring2Geometry = new THREE.RingGeometry(2.8, 2.83, 64);
     const ring2Material = new THREE.MeshBasicMaterial({
-      color: 0xa855f7,
+      color: cPrimary,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.4,
     });
     const ring2Mesh = new THREE.Mesh(ring2Geometry, ring2Material);
     ring2Mesh.rotation.y = Math.PI / 4;
@@ -186,23 +188,10 @@ export function ThreeDModel() {
 
     animate();
 
-    const handleResize = () => {
-      if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-
-    const resizeObserver = new ResizeObserver(() => handleResize());
-    resizeObserver.observe(container);
-
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animationFrameId);
-      resizeObserver.disconnect();
-      if (container && renderer.domElement.parentNode === container) {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       sphereGeometry.dispose();
@@ -216,12 +205,11 @@ export function ThreeDModel() {
       ring2Material.dispose();
       renderer.dispose();
     };
-  }, []);
+  }, [primaryColor, secondaryColor]);
 
   return (
-    <div
-      ref={mountRef}
-      className="relative flex h-full w-full items-center justify-center min-h-[320px]"
-    />
+    <div className="relative flex h-full min-h-[260px] w-full items-center justify-center">
+      <div ref={mountRef} className="h-64 w-64 sm:h-72 sm:w-72" />
+    </div>
   );
 }

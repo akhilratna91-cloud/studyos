@@ -210,7 +210,7 @@ export default function PyqPage() {
 
   return (
     <div className="space-y-6 theme-pyq">
-      <PageHeader tag="PYQ Bank" title="Previous Year Question Vault" subtitle={status} />
+      <PageHeader tag="PYQ Bank (Emerald & Amber Blend)" title="Previous Year Question Vault" subtitle={status} />
 
       {/* Stats Summary */}
       {stats && (

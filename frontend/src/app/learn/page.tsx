@@ -212,7 +212,7 @@ export default function LearnPage() {
   return (
     <div className="space-y-6 theme-learn">
       <PageHeader
-        tag="Syllabus Navigation (v1.0.2)"
+        tag="Syllabus Navigation (Cyan & Emerald Blend)"
         title="Universal Exam & Syllabus Matrix"
         subtitle={status}
       />

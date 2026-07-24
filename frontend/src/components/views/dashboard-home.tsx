@@ -197,12 +197,12 @@ export default function DashboardHome() {
 
             {/* Right Column — Interactive 3D Globe */}
             <div className="relative flex h-60 w-full items-center justify-center lg:h-64">
-              <ThreeDModel />
+              <ThreeDModel primaryColor="#ec4899" secondaryColor="#10b981" />
               
               {/* Floating Status Pill */}
-              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-950/60 px-3 py-1 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+              <div className="absolute right-0 top-0 flex items-center gap-2 rounded-full border border-pink-400/40 bg-pink-950/60 px-3 py-1 backdrop-blur-md shadow-[0_0_12px_rgba(236,72,153,0.3)]">
                 <div className={`h-2 w-2 rounded-full ${health ? "bg-emerald-400 animate-pulse" : "bg-rose-500"}`} />
-                <span className="font-mono text-[9px] text-emerald-300 font-semibold tracking-wider uppercase">
+                <span className="font-mono text-[9px] text-pink-300 font-semibold tracking-wider uppercase">
                   {health ? "System Online" : "Offline"}
                 </span>
               </div>
@@ -214,27 +214,27 @@ export default function DashboardHome() {
       {/* ─── Stats Grid ─── */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon={<Clock3 size={18} className="text-emerald-400" />}
+          icon={<Clock3 size={18} className="text-pink-400" />}
           label="Study Hours"
           value={studyHours.toFixed(1)}
           suffix="hrs"
           trend="Today"
           trendUp
-          color="emerald"
+          color="magenta"
         />
         <StatCard
-          icon={<Target size={18} className="text-purple-400" />}
+          icon={<Target size={18} className="text-emerald-400" />}
           label="Completion"
           value={completionRate}
           suffix="%"
-          color="purple"
+          color="emerald"
         />
         <StatCard
-          icon={<ShieldCheck size={18} className="text-cyan-400" />}
+          icon={<ShieldCheck size={18} className="text-pink-400" />}
           label="Accuracy"
           value={accuracy}
           suffix="%"
-          color="cyan"
+          color="magenta"
         />
         <StatCard
           icon={<Activity size={18} className="text-emerald-400" />}
@@ -249,12 +249,12 @@ export default function DashboardHome() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Chart */}
         <motion.div variants={itemVariants}>
-          <GlassCard glowColor="emerald" className="flex h-full flex-col p-6 border-emerald-500/25">
+          <GlassCard glowColor="emerald" className="flex h-full flex-col p-6 border-pink-500/25">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <Activity size={15} /> Weekly Velocity Graph
+              <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
+                <Activity size={15} className="text-emerald-400" /> Weekly Velocity Graph (Pink & Green)
               </h3>
-              <span className="font-mono text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+              <span className="font-mono text-[10px] text-pink-300 bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20">
                 Score Matrix
               </span>
             </div>
@@ -263,15 +263,15 @@ export default function DashboardHome() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={weeklyData}>
                   <defs>
-                    <linearGradient id="colorScoreGreenPurple" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
+                    <linearGradient id="colorScorePinkGreen" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ec4899" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#0E0919",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      border: "1px solid rgba(236, 72, 153, 0.3)",
                       borderRadius: "8px",
                       fontSize: "12px",
                       color: "#F3F4F6"
@@ -292,7 +292,7 @@ export default function DashboardHome() {
                     stroke="#10b981"
                     strokeWidth={2.5}
                     fillOpacity={1}
-                    fill="url(#colorScoreGreenPurple)"
+                    fill="url(#colorScorePinkGreen)"
                   />
                 </AreaChart>
               </ResponsiveContainer>

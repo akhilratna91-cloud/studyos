@@ -3,8 +3,17 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export function Ambient3DBackground() {
+interface Ambient3DBackgroundProps {
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export function Ambient3DBackground({
+  primaryColor = "#10b981",
+  secondaryColor = "#a855f7",
+}: Ambient3DBackgroundProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const particlesRef = useRef<THREE.Points | null>(null);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -17,26 +26,29 @@ export function Ambient3DBackground() {
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     camera.position.z = 12;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Create 3D Particle Constellation (Emerald & Purple)
-    const count = 90;
+    // Create 3D Particle Constellation
+    const count = 100;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const velocities: { x: number; y: number; z: number }[] = [];
 
-    const color1 = new THREE.Color(0x10b981); // Emerald
-    const color2 = new THREE.Color(0xa855f7); // Purple
-    const color3 = new THREE.Color(0x00ff9d); // Glow Green
+    const c1 = new THREE.Color(primaryColor);
+    const c2 = new THREE.Color(secondaryColor);
 
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 30;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 30;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+      positions[i * 3] = (Math.random() - 0.5) * 32;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 32;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 16;
 
       velocities.push({
         x: (Math.random() - 0.5) * 0.015,
@@ -46,9 +58,8 @@ export function Ambient3DBackground() {
 
       const mixed = new THREE.Color();
       const r = Math.random();
-      if (r < 0.4) mixed.copy(color1);
-      else if (r < 0.8) mixed.copy(color2);
-      else mixed.copy(color3);
+      if (r < 0.5) mixed.copy(c1);
+      else mixed.copy(c2);
 
       colors[i * 3] = mixed.r;
       colors[i * 3 + 1] = mixed.g;
@@ -59,13 +70,14 @@ export function Ambient3DBackground() {
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 0.15,
+      size: 0.18,
       vertexColors: true,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.55,
     });
 
     const particles = new THREE.Points(geometry, material);
+    particlesRef.current = particles;
     scene.add(particles);
 
     // Animation Loop (Adaptive 60Hz to 120Hz refresh rate delta engine)
@@ -108,21 +120,41 @@ export function Ambient3DBackground() {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
-      if (container && renderer.domElement.parentNode === container) {
+      window.removeEventListener("resize", handleResize);
+      if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       geometry.dispose();
       material.dispose();
       renderer.dispose();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div
-      ref={mountRef}
-      className="pointer-events-none fixed inset-0 z-0 h-screen w-screen overflow-hidden opacity-80"
-    />
-  );
+  // Smoothly update particle colors when route theme changes
+  useEffect(() => {
+    if (!particlesRef.current) return;
+    const geometry = particlesRef.current.geometry;
+    const colorAttr = geometry.attributes.color as THREE.BufferAttribute;
+    const colorsArr = colorAttr.array as Float32Array;
+    const count = colorsArr.length / 3;
+
+    const c1 = new THREE.Color(primaryColor);
+    const c2 = new THREE.Color(secondaryColor);
+
+    for (let i = 0; i < count; i++) {
+      const mixed = new THREE.Color();
+      const r = Math.random();
+      if (r < 0.5) mixed.copy(c1);
+      else mixed.copy(c2);
+
+      colorsArr[i * 3] = mixed.r;
+      colorsArr[i * 3 + 1] = mixed.g;
+      colorsArr[i * 3 + 2] = mixed.b;
+    }
+    colorAttr.needsUpdate = true;
+  }, [primaryColor, secondaryColor]);
+
+  return <div ref={mountRef} className="pointer-events-none fixed inset-0 z-0" />;
 }

@@ -47,7 +47,7 @@ export default function AnalyticsPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-analytics">
-      <PageHeader tag="Intelligence Hub" title="Performance Analytics" subtitle="Track your accuracy, identify weak areas, and optimize your study velocity." />
+      <PageHeader tag="Intelligence Hub (Indigo & Purple Blend)" title="Performance Analytics" subtitle="Track your accuracy, identify weak areas, and optimize your study velocity." />
 
       <motion.div variants={item} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={<ShieldCheck size={18} className="text-emerald-400" />} label="Accuracy" value={analytics?.accuracy || 0} suffix="%" color="emerald" />
