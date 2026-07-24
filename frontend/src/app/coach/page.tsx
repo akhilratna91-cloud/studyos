@@ -60,17 +60,17 @@ export default function CoachPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={v} className="space-y-6 theme-coach">
-      <PageHeader tag="AI Guidance Engine" title="AI Study Coach" subtitle="Personalized insights, weakness targeting, and motivational fuel." />
+      <PageHeader tag="AI Guidance Engine (Red & Pink Blend)" title="AI Study Coach" subtitle="Personalized insights, weakness targeting, and motivational fuel." />
 
       {/* Motivation card */}
       <motion.div variants={item}>
-        <GlassCard glowColor="purple" className="relative overflow-hidden p-6 sm:p-8 border-purple-500/30">
-          <Sparkles className="absolute -right-6 -top-6 h-28 w-28 text-purple-500/10" />
+        <GlassCard glowColor="purple" className="relative overflow-hidden p-6 sm:p-8 border-red-500/30">
+          <Sparkles className="absolute -right-6 -top-6 h-28 w-28 text-pink-500/15" />
           <div className="relative z-10">
-            <div className="mb-2 text-xs font-heading font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-              <Sparkles size={15} /> Daily Mindset Fuel
+            <div className="mb-2 text-xs font-heading font-bold uppercase tracking-widest text-red-400 flex items-center gap-2">
+              <Sparkles size={15} className="text-pink-400" /> Daily Mindset Fuel (Red & Pink)
             </div>
-            <p className="text-lg font-medium leading-relaxed text-purple-100 italic">&ldquo;{quote}&rdquo;</p>
+            <p className="text-lg font-medium leading-relaxed text-pink-100 italic">&ldquo;{quote}&rdquo;</p>
             <NeonButton variant="outline" glowColor="purple" className="mt-4 text-xs" onClick={() => void refreshQuote()} loading={refreshing}>
               <RefreshCw size={14} /> Refresh Motivation Quote
             </NeonButton>

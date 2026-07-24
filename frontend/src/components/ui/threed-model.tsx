@@ -151,30 +151,35 @@ export function ThreeDModel() {
 
     window.addEventListener("mousemove", handleMouseMove);
 
-    // Animation Loop
+    // Animation Loop (Adaptive 60Hz to 120Hz refresh rate delta engine)
     let animationFrameId: number;
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      sphereMesh.rotation.y += 0.0025;
-      spherePoints.rotation.y += 0.0025;
-      ring1Mesh.rotation.z += 0.003;
-      ring2Mesh.rotation.z -= 0.002;
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const fpsFactor = delta * 60; // Standardized multiplier for 60Hz to 120Hz
+
+      sphereMesh.rotation.y += 0.0025 * fpsFactor;
+      spherePoints.rotation.y += 0.0025 * fpsFactor;
+      ring1Mesh.rotation.z += 0.003 * fpsFactor;
+      ring2Mesh.rotation.z -= 0.002 * fpsFactor;
 
       const positionsArr = particles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
-        angles[i] += speeds[i];
+        angles[i] += speeds[i] * fpsFactor;
         positionsArr[i * 3] = radii[i] * Math.cos(angles[i]);
         positionsArr[i * 3 + 1] = radii[i] * Math.sin(angles[i]) * Math.sin(inclinationY[i]);
         positionsArr[i * 3 + 2] = radii[i] * Math.sin(angles[i]) * Math.cos(inclinationY[i]);
       }
       particles.geometry.attributes.position.needsUpdate = true;
 
-      targetX += (mouseX - targetX) * 0.06;
-      targetY += (mouseY - targetY) * 0.06;
+      // Mouse interactive tilt smoothing (60-120Hz lerp)
+      targetX += (mouseX - targetX) * 0.05 * fpsFactor;
+      targetY += (mouseY - targetY) * 0.05 * fpsFactor;
       mainGroup.rotation.y = targetX;
-      mainGroup.rotation.x = targetY;
+      mainGroup.rotation.x = -targetY;
 
       renderer.render(scene, camera);
     };

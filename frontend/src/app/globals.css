@@ -65,12 +65,12 @@ body {
 }
 
 /* ─── Per-Page Distinct Palette Themes ─── */
-/* 1. Dashboard Theme */
+/* 1. Dashboard Theme — Pink & Green Blend (User Requested) */
 .theme-dashboard {
-  --theme-primary: #10b981;
-  --theme-secondary: #a855f7;
-  --theme-glow: rgba(168, 85, 247, 0.25);
-  --theme-border: rgba(16, 185, 129, 0.3);
+  --theme-primary: #ec4899;
+  --theme-secondary: #10b981;
+  --theme-glow: rgba(236, 72, 153, 0.3);
+  --theme-border: rgba(16, 185, 129, 0.35);
 }
 
 /* 2. Today Execution Theme */
@@ -81,12 +81,12 @@ body {
   --theme-border: rgba(132, 204, 22, 0.35);
 }
 
-/* 3. Planner Theme */
+/* 3. Planner Theme — Red & Green Blend (User Requested) */
 .theme-planner {
-  --theme-primary: #a855f7;
-  --theme-secondary: #ec4899;
-  --theme-glow: rgba(236, 72, 153, 0.25);
-  --theme-border: rgba(168, 85, 247, 0.35);
+  --theme-primary: #ef4444;
+  --theme-secondary: #10b981;
+  --theme-glow: rgba(239, 68, 68, 0.3);
+  --theme-border: rgba(16, 185, 129, 0.35);
 }
 
 /* 4. Learn Theme */
@@ -97,12 +97,12 @@ body {
   --theme-border: rgba(16, 185, 129, 0.3);
 }
 
-/* 5. Quiz Theme */
+/* 5. Quiz Theme — Orange & Green Blend (User Requested) */
 .theme-quiz {
-  --theme-primary: #9333ea;
-  --theme-secondary: #f43f5e;
-  --theme-glow: rgba(147, 51, 234, 0.3);
-  --theme-border: rgba(244, 63, 94, 0.35);
+  --theme-primary: #f97316;
+  --theme-secondary: #10b981;
+  --theme-glow: rgba(249, 115, 22, 0.3);
+  --theme-border: rgba(16, 185, 129, 0.35);
 }
 
 /* 6. PYQ Theme */
@@ -121,12 +121,12 @@ body {
   --theme-border: rgba(168, 85, 247, 0.3);
 }
 
-/* 8. Coach Theme */
+/* 8. Coach Theme — Red & Pink Blend (User Requested) */
 .theme-coach {
-  --theme-primary: #34d399;
-  --theme-secondary: #c084fc;
-  --theme-glow: rgba(52, 211, 153, 0.3);
-  --theme-border: rgba(192, 132, 252, 0.35);
+  --theme-primary: #ef4444;
+  --theme-secondary: #ec4899;
+  --theme-glow: rgba(239, 68, 68, 0.3);
+  --theme-border: rgba(236, 72, 153, 0.35);
 }
 
 /* 9. Sessions Theme */

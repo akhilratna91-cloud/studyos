@@ -375,9 +375,9 @@ export default function QuizPage() {
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         {/* Left: Controls & Config */}
         <div className="space-y-6">
-          <GlassCard glowColor="purple" className="p-6 border-purple-500/30">
-            <div className="flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wider text-purple-300 mb-4">
-              <Sparkles size={16} className="text-pink-400" /> Quiz Mode & Config
+          <GlassCard glowColor="emerald" className="p-6 border-orange-500/30">
+            <div className="flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wider text-orange-400 mb-4">
+              <Sparkles size={16} className="text-emerald-400" /> Quiz Mode & Config (Orange & Green)
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">

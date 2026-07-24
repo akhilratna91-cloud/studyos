@@ -150,24 +150,24 @@ export default function DashboardHome() {
     >
       {/* ─── Hero Card ─── */}
       <motion.div variants={itemVariants}>
-        <GlassCard glowColor="dual" className="relative overflow-hidden p-6 sm:p-8 border-purple-500/30">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-purple-500/15 blur-[80px]" />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-emerald-500/15 blur-[60px]" />
+        <GlassCard glowColor="emerald" className="relative overflow-hidden p-6 sm:p-8 border-pink-500/30">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-pink-500/20 blur-[80px]" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-emerald-500/20 blur-[60px]" />
 
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_300px] lg:items-center">
             {/* Left Column — Text & Progress */}
             <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-emerald-400" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 font-semibold">
-                    AI Flow OS v1.0.2 Matrix
+                  <Sparkles size={16} className="text-pink-400" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-pink-400 font-semibold">
+                    AI Flow OS v1.0.2 Matrix • Pink & Green
                   </span>
                 </div>
-                <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-white text-gradient-emerald-purple">
+                <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-white bg-gradient-to-r from-pink-400 via-rose-300 to-emerald-400 bg-clip-text text-transparent">
                   Welcome back, {user?.displayName || "Scholar"}
                 </h1>
-                <p className="mt-2 text-xs leading-relaxed text-purple-200/80 italic font-medium">
+                <p className="mt-2 text-xs leading-relaxed text-pink-100/80 italic font-medium">
                   &ldquo;{quote}&rdquo;
                 </p>
 

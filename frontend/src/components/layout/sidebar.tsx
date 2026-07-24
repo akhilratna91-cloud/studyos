@@ -25,14 +25,14 @@ import { useUserStore } from "@/store/user-store";
 import { useState } from "react";
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: Home, themeColor: "from-emerald-500 to-purple-600" },
+  { name: "Dashboard", href: "/", icon: Home, themeColor: "from-pink-500 to-emerald-500" },
   { name: "Today", href: "/today", icon: CalendarCheck, themeColor: "from-emerald-500 to-lime-500" },
-  { name: "Planner", href: "/planner", icon: CalendarPlus, themeColor: "from-purple-500 to-pink-500" },
+  { name: "Planner", href: "/planner", icon: CalendarPlus, themeColor: "from-red-500 to-emerald-500" },
   { name: "Learn", href: "/learn", icon: PlayCircle, themeColor: "from-cyan-500 to-emerald-500" },
-  { name: "Quiz", href: "/quiz", icon: Brain, themeColor: "from-purple-600 to-rose-500" },
+  { name: "Quiz", href: "/quiz", icon: Brain, themeColor: "from-orange-500 to-emerald-500" },
   { name: "PYQ", href: "/pyq", icon: FileText, themeColor: "from-emerald-500 to-amber-500" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, themeColor: "from-indigo-500 to-purple-500" },
-  { name: "AI Coach", href: "/coach", icon: Sparkles, themeColor: "from-emerald-400 to-purple-400" },
+  { name: "AI Coach", href: "/coach", icon: Sparkles, themeColor: "from-red-500 to-pink-500" },
   { name: "Sessions", href: "/sessions", icon: Timer, themeColor: "from-purple-500 to-rose-500" },
   { name: "Calendar", href: "/calendar", icon: Calendar, themeColor: "from-teal-500 to-purple-500" },
   { name: "Profile", href: "/profile", icon: User, themeColor: "from-emerald-500 to-purple-600" },

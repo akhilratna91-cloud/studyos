@@ -68,17 +68,21 @@ export function Ambient3DBackground() {
     const particles = new THREE.Points(geometry, material);
     scene.add(particles);
 
-    // Animation Loop
+    // Animation Loop (Adaptive 60Hz to 120Hz refresh rate delta engine)
     let animationFrameId: number;
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const fpsFactor = delta * 60; // Standardized multiplier for 60Hz to 120Hz
+
       const posArr = particles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < count; i++) {
-        posArr[i * 3] += velocities[i].x;
-        posArr[i * 3 + 1] += velocities[i].y;
-        posArr[i * 3 + 2] += velocities[i].z;
+        posArr[i * 3] += velocities[i].x * fpsFactor;
+        posArr[i * 3 + 1] += velocities[i].y * fpsFactor;
+        posArr[i * 3 + 2] += velocities[i].z * fpsFactor;
 
         // Boundary wrapping
         if (Math.abs(posArr[i * 3]) > 18) velocities[i].x *= -1;
@@ -86,7 +90,7 @@ export function Ambient3DBackground() {
         if (Math.abs(posArr[i * 3 + 2]) > 10) velocities[i].z *= -1;
       }
       particles.geometry.attributes.position.needsUpdate = true;
-      particles.rotation.y += 0.0005;
+      particles.rotation.y += 0.0005 * fpsFactor;
 
       renderer.render(scene, camera);
     };

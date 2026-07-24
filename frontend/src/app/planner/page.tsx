@@ -144,14 +144,14 @@ export default function PlannerPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={containerVariants} className="space-y-6 theme-planner">
-      <PageHeader tag="AI Plan Matrix" title="Build Custom Study Cycle" subtitle={status} />
+      <PageHeader tag="AI Plan Matrix (Red & Green Blend)" title="Build Custom Study Cycle" subtitle={status} />
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         {/* Form */}
         <motion.div variants={itemVariants}>
-          <GlassCard glowColor="purple" className="p-6 border-purple-500/30">
-            <div className="flex items-center gap-2 mb-4 font-heading text-xs font-bold uppercase tracking-wider text-purple-300">
-              <Sparkles size={16} className="text-pink-400" /> Plan Parameters
+          <GlassCard glowColor="emerald" className="p-6 border-red-500/30">
+            <div className="flex items-center gap-2 mb-4 font-heading text-xs font-bold uppercase tracking-wider text-red-400">
+              <Sparkles size={16} className="text-emerald-400" /> Plan Parameters (Red & Green)
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
