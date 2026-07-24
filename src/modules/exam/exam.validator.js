@@ -7,7 +7,7 @@ const { body, param, query, validationResult } = require('express-validator');
 const { sendError } = require('../../shared/utils/response');
 
 // ─── Valid categories (must match model enum) ────────────────────────────────────
-const VALID_CATEGORIES = ['engineering', 'medical', 'government', 'banking', 'boards', 'defence', 'law', 'other'];
+const VALID_CATEGORIES = ['engineering', 'medical', 'government', 'banking', 'boards', 'defence', 'law', 'management', 'graduate', 'overseas', 'other'];
 
 // ─── Create Exam Rules ──────────────────────────────────────────────────────────
 

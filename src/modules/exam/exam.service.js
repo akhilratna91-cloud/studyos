@@ -28,15 +28,17 @@ class ExamService {
    * @returns {Promise<{ seeded: boolean, count: number }>}
    */
   static async seedExams() {
-    const hasExams = await ExamRepository.hasAny();
-    if (hasExams) {
-      const count = await ExamRepository.count();
-      return { seeded: false, count };
+    let seededCount = 0;
+    for (const examData of EXAM_SEEDS) {
+      const existing = await ExamRepository.findBySlug(examData.slug);
+      if (!existing) {
+        await ExamRepository.create(examData);
+        seededCount++;
+      }
     }
-
-    const created = await ExamRepository.bulkCreate(EXAM_SEEDS);
-    console.log(`[StudyOS] Seeded ${created.length} exams`);
-    return { seeded: true, count: created.length };
+    const totalCount = await ExamRepository.count();
+    console.log(`[StudyOS] Exam Matrix ready: ${totalCount} active exams (${seededCount} newly seeded)`);
+    return { seeded: seededCount > 0, count: totalCount };
   }
 
   // ───────────────────────────────────────────────────────────────────────────────

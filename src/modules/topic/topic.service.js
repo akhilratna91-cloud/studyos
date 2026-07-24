@@ -10,6 +10,8 @@ const TopicRepository = require('./topic.repository');
 const ChapterRepository = require('../chapter/chapter.repository');
 const SubjectRepository = require('../subject/subject.repository');
 const ExamRepository = require('../exam/exam.repository');
+const Chapter = require('../chapter/chapter.model');
+const Topic = require('./topic.model');
 const TOPIC_SEEDS = require('./topic.seeds');
 
 class TopicService {
@@ -22,51 +24,60 @@ class TopicService {
    * Idempotent — skips if topics already exist.
    */
   static async seedTopics() {
-    const hasTopics = await TopicRepository.hasAny();
-    if (hasTopics) {
-      return { seeded: false, count: 0 };
-    }
+    let seededCount = 0;
 
-    const allTopics = [];
-
+    // 1. Explicit seed items
     for (const [key, topics] of Object.entries(TOPIC_SEEDS)) {
       const [examSlug, subjectSlug, chapterSlug] = key.split('/');
 
       const exam = await ExamRepository.findBySlug(examSlug);
-      if (!exam) {
-        console.warn(`[StudyOS] Seed warning: exam "${examSlug}" not found, skipping`);
-        continue;
-      }
+      if (!exam) continue;
 
       const subject = await SubjectRepository.findByExamAndSlug(exam._id, subjectSlug);
-      if (!subject) {
-        console.warn(`[StudyOS] Seed warning: subject "${subjectSlug}" not found under "${examSlug}", skipping`);
-        continue;
-      }
+      if (!subject) continue;
 
       const chapter = await ChapterRepository.findBySubjectAndSlug(subject._id, chapterSlug);
-      if (!chapter) {
-        console.warn(`[StudyOS] Seed warning: chapter "${chapterSlug}" not found under "${subjectSlug}", skipping`);
-        continue;
-      }
+      if (!chapter) continue;
 
       for (const t of topics) {
-        allTopics.push({
-          ...t,
-          chapterId: chapter._id,
-          subjectId: subject._id,
-          examId: exam._id,
-        });
+        const existing = await TopicRepository.findByChapterAndSlug(chapter._id, t.slug);
+        if (!existing) {
+          await TopicRepository.create({
+            ...t,
+            chapterId: chapter._id,
+            subjectId: subject._id,
+            examId: exam._id,
+          });
+          seededCount++;
+        }
       }
     }
 
-    if (allTopics.length === 0) {
-      return { seeded: false, count: 0 };
+    // 2. Fallback generator: Ensure EVERY chapter has at least 3 topics
+    const allChapters = await Chapter.find({}).exec();
+    for (const chap of allChapters) {
+      const existingCount = await TopicRepository.countByChapterId(chap._id);
+      if (existingCount === 0) {
+        const defaultTopics = [
+          { name: `Theoretical Foundations of ${chap.name}`, slug: `theory-${chap.slug}`, difficulty: 'easy', weightage: 30, estimatedMinutes: 40, sortOrder: 1 },
+          { name: `Core Mechanics & Problem Patterns`, slug: `mechanics-${chap.slug}`, difficulty: 'medium', weightage: 40, estimatedMinutes: 50, sortOrder: 2 },
+          { name: `Advanced Exam Application`, slug: `application-${chap.slug}`, difficulty: 'hard', weightage: 30, estimatedMinutes: 60, sortOrder: 3 },
+        ];
+        for (const t of defaultTopics) {
+          await TopicRepository.create({
+            ...t,
+            chapterId: chap._id,
+            subjectId: chap.subjectId,
+            examId: chap.examId,
+          });
+          seededCount++;
+        }
+      }
     }
 
-    const created = await TopicRepository.bulkCreate(allTopics);
-    console.log(`[StudyOS] Seeded ${created.length} topics`);
-    return { seeded: true, count: created.length };
+    const totalCount = await Topic.countDocuments();
+    console.log(`[StudyOS] Topic Matrix ready: ${totalCount} active topics (${seededCount} newly seeded)`);
+    return { seeded: seededCount > 0, count: totalCount };
   }
 
   // ───────────────────────────────────────────────────────────────────────────────

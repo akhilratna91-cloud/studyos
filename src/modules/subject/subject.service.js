@@ -14,6 +14,7 @@
 const AppError = require('../../shared/errors/AppError');
 const SubjectRepository = require('./subject.repository');
 const ExamRepository = require('../exam/exam.repository');
+const Subject = require('./subject.model');
 const SUBJECT_SEEDS = require('./subject.seeds');
 
 class SubjectService {
@@ -27,32 +28,24 @@ class SubjectService {
    * @returns {Promise<{ seeded: boolean, count: number }>}
    */
   static async seedSubjects() {
-    const hasSubjects = await SubjectRepository.hasAny();
-    if (hasSubjects) {
-      return { seeded: false, count: 0 };
-    }
-
-    const allSubjects = [];
+    let seededCount = 0;
 
     for (const [examSlug, subjects] of Object.entries(SUBJECT_SEEDS)) {
       const exam = await ExamRepository.findBySlug(examSlug);
-      if (!exam) {
-        console.warn(`[StudyOS] Seed warning: exam "${examSlug}" not found, skipping its subjects`);
-        continue;
-      }
+      if (!exam) continue;
 
       for (const subj of subjects) {
-        allSubjects.push({ ...subj, examId: exam._id });
+        const existing = await SubjectRepository.findByExamAndSlug(exam._id, subj.slug);
+        if (!existing) {
+          await SubjectRepository.create({ ...subj, examId: exam._id });
+          seededCount++;
+        }
       }
     }
 
-    if (allSubjects.length === 0) {
-      return { seeded: false, count: 0 };
-    }
-
-    const created = await SubjectRepository.bulkCreate(allSubjects);
-    console.log(`[StudyOS] Seeded ${created.length} subjects across ${Object.keys(SUBJECT_SEEDS).length} exams`);
-    return { seeded: true, count: created.length };
+    const totalCount = await Subject.countDocuments();
+    console.log(`[StudyOS] Subject Matrix ready: ${totalCount} active subjects (${seededCount} newly seeded)`);
+    return { seeded: seededCount > 0, count: totalCount };
   }
 
   // ───────────────────────────────────────────────────────────────────────────────

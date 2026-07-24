@@ -10,8 +10,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-headi
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-body" });
 
 export const metadata: Metadata = {
-  title: "StudyOS v1.0.1 | AI-Powered 3D Study Platform",
-  description: "Next-gen study operating system with Green & Purple glassmorphism, 3D interactive physics, and flow-state analytics.",
+  title: "StudyOS v1.0.2 | Universal 3D Study Operating System",
+  description: "Next-gen study operating system with 50+ competitive exam matrix, Green & Purple glassmorphism, 3D interactive physics, and flow-state analytics.",
 };
 
 export default function RootLayout({

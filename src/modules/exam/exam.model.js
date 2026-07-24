@@ -48,7 +48,7 @@ const examSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Category is required'],
       enum: {
-        values: ['engineering', 'medical', 'government', 'banking', 'boards', 'defence', 'law', 'other'],
+        values: ['engineering', 'medical', 'government', 'banking', 'boards', 'defence', 'law', 'management', 'graduate', 'overseas', 'other'],
         message: '{VALUE} is not a valid exam category',
       },
       index: true,

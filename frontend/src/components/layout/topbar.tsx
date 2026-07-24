@@ -60,7 +60,7 @@ export function Topbar() {
           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-[11px] font-medium text-purple-200 md:flex">
               <ShieldCheck size={13} className="text-emerald-400" />
-              <span>v1.0.1 Active</span>
+              <span>v1.0.2 Active</span>
             </div>
             
             <Link href="/sessions">

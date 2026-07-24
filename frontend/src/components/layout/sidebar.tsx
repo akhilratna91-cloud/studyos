@@ -66,7 +66,7 @@ export function Sidebar() {
                 StudyOS
               </span>
               <span className="font-mono text-[9px] font-semibold tracking-widest text-purple-400/80 uppercase">
-                v1.0.1 AI Core
+                v1.0.2 AI Matrix
               </span>
             </motion.div>
           )}

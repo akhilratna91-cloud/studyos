@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  BookOpenText,
   FileText,
-  Layers3,
   PlayCircle,
   Sparkles,
   Target,
+  Search,
+  CheckCircle2,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { NeonButton } from "@/components/ui/neon-button";
@@ -53,12 +53,27 @@ function difficultyClasses(level: ChapterSummary["difficulty"] | TopicSummary["d
   return "border-amber-500/30 bg-amber-500/10 text-amber-400";
 }
 
+const CATEGORY_TABS = [
+  { id: "all", label: "All Exams" },
+  { id: "engineering", label: "Engineering" },
+  { id: "medical", label: "Medical" },
+  { id: "government", label: "Govt & SSC" },
+  { id: "banking", label: "Banking" },
+  { id: "management", label: "Management" },
+  { id: "law", label: "Law" },
+  { id: "graduate", label: "GATE & Research" },
+  { id: "boards", label: "School Boards" },
+  { id: "overseas", label: "Overseas & SAT" },
+];
+
 export default function LearnPage() {
   const { user, hasHydrated } = useUserStore();
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [subjects, setSubjects] = useState<SubjectSummary[]>([]);
   const [chapters, setChapters] = useState<ChapterSummary[]>([]);
   const [topics, setTopics] = useState<TopicSummary[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedExamSlug, setSelectedExamSlug] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedChapterId, setSelectedChapterId] = useState("");
@@ -83,7 +98,7 @@ export default function LearnPage() {
         startTransition(() => {
           setExams(examList);
           setSelectedExamSlug(suggestedExam?.slug || "");
-          setStatus("Syllabus map initialized. Choose a subject and chapter to explore.");
+          setStatus("Syllabus map loaded. Filter by category or search 50+ exams.");
         });
       } catch (error) {
         if (!active) return;
@@ -167,6 +182,14 @@ export default function LearnPage() {
     return () => { active = false; };
   }, [selectedChapterId, startTransition]);
 
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      const matchesCat = selectedCategory === "all" || exam.category === selectedCategory;
+      const matchesSearch = !searchQuery || exam.name.toLowerCase().includes(searchQuery.toLowerCase()) || exam.slug.includes(searchQuery.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [exams, selectedCategory, searchQuery]);
+
   const selectedExam = useMemo(
     () => exams.find((item) => item.slug === selectedExamSlug) || exams[0],
     [exams, selectedExamSlug],
@@ -189,32 +212,64 @@ export default function LearnPage() {
   return (
     <div className="space-y-6 theme-learn">
       <PageHeader
-        tag="Syllabus Navigation"
-        title="Interactive Learn Matrix"
+        tag="Syllabus Navigation (v1.0.2)"
+        title="Universal Exam & Syllabus Matrix"
         subtitle={status}
       />
 
-      {/* Exam Switcher */}
-      <GlassCard glowColor="cyan" className="p-4 border-cyan-500/30">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Category Tabs & Search Bar */}
+      <GlassCard glowColor="cyan" className="p-5 border-cyan-500/30">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wider text-cyan-300">
-            <Sparkles size={16} className="text-emerald-400" /> Exam Syllabus Stream
+            <Sparkles size={16} className="text-emerald-400" /> Filter Exam Matrix ({filteredExams.length} Available)
           </div>
-          <div className="flex flex-wrap gap-2">
-            {exams.map((exam) => (
-              <button
-                key={exam.slug}
-                onClick={() => setSelectedExamSlug(exam.slug)}
-                className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-all ${
-                  selectedExamSlug === exam.slug
-                    ? "border border-cyan-400/50 bg-cyan-500/20 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border border-purple-500/20 bg-purple-950/20 text-purple-300/70 hover:text-white"
-                }`}
-              >
-                {exam.name}
-              </button>
-            ))}
+          <div className="relative w-full md:w-72 font-mono text-xs">
+            <Search size={14} className="absolute left-3 top-2.5 text-cyan-400" />
+            <input
+              type="text"
+              placeholder="Search 50+ exams..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-cyan-500/30 bg-cyan-950/20 pl-9 pr-3 py-1.5 text-white placeholder-purple-300/50 focus:border-cyan-400 focus:outline-none"
+            />
           </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="no-scrollbar flex flex-wrap gap-2 overflow-x-auto pb-1">
+          {CATEGORY_TABS.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-all ${
+                selectedCategory === cat.id
+                  ? "border border-cyan-400 bg-cyan-500/20 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                  : "border border-purple-500/20 bg-purple-950/20 text-purple-300/70 hover:text-white"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Exam Selection Pills */}
+        <div className="no-scrollbar mt-4 flex max-h-36 flex-wrap gap-2 overflow-y-auto pr-1">
+          {filteredExams.map((exam) => (
+            <button
+              key={exam.slug}
+              onClick={() => setSelectedExamSlug(exam.slug)}
+              className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-all ${
+                selectedExamSlug === exam.slug
+                  ? "border border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                  : "border border-purple-500/15 bg-purple-950/15 text-purple-200/80 hover:border-cyan-400/50 hover:bg-cyan-950/30"
+              }`}
+            >
+              {exam.name}
+            </button>
+          ))}
+          {filteredExams.length === 0 && (
+            <div className="font-mono text-xs text-purple-300/70 py-2">No exams matching &quot;{searchQuery}&quot;. Try selecting &quot;All Exams&quot;.</div>
+          )}
         </div>
       </GlassCard>
 
@@ -224,8 +279,8 @@ export default function LearnPage() {
         <div className="space-y-4">
           {/* Subjects */}
           <GlassCard glowColor="cyan" className="p-4 border-cyan-500/25">
-            <div className="text-xs font-heading font-bold uppercase tracking-wider text-cyan-300 mb-3">
-              Subjects
+            <div className="font-heading text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3">
+              Subjects for {selectedExam?.name || "Exam"}
             </div>
             <div className="flex flex-wrap gap-2">
               {subjects.map((sub) => {
@@ -236,7 +291,7 @@ export default function LearnPage() {
                   <button
                     key={subId}
                     onClick={() => setSelectedSubjectId(subId)}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-all text-center ${
+                    className={`flex-1 rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition-all text-center ${
                       isSel
                         ? "border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
                         : "border-purple-500/20 bg-purple-950/20 text-purple-300/70 hover:text-white"
@@ -249,88 +304,74 @@ export default function LearnPage() {
             </div>
           </GlassCard>
 
-          {/* Chapters List */}
-          <GlassCard glowColor="emerald" className="p-4 border-emerald-500/25">
-            <div className="text-xs font-heading font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center justify-between">
-              <span>Chapters</span>
-              <span className="font-mono text-[10px] text-purple-300">{chapters.length} Modules</span>
+          {/* Chapters */}
+          <GlassCard glowColor="cyan" className="p-4 border-cyan-500/25">
+            <div className="font-heading text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3">
+              Chapters ({chapters.length})
             </div>
-            <div className="no-scrollbar max-h-[500px] space-y-2 overflow-y-auto pr-1">
+            <div className="no-scrollbar space-y-2 max-h-[420px] overflow-y-auto pr-1">
               {chapters.map((chap) => {
                 const chapId = getId(chap);
                 const isSel = chapId === selectedChapterId;
 
                 return (
-                  <div
+                  <button
                     key={chapId}
                     onClick={() => setSelectedChapterId(chapId)}
-                    className={`cursor-pointer rounded-lg border p-3 transition-all ${
+                    className={`w-full rounded-lg border p-3 text-left font-mono text-xs transition-all ${
                       isSel
-                        ? "border-emerald-400 bg-emerald-950/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                        : "border-purple-500/20 bg-purple-950/10 hover:border-purple-400/40"
+                        ? "border-cyan-400 bg-cyan-500/20 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                        : "border-purple-500/20 bg-purple-950/20 text-purple-200/80 hover:border-cyan-400/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-white">{chap.name}</span>
-                      <span className={`rounded-full border px-2 py-0.5 text-[9px] uppercase font-mono font-bold ${difficultyClasses(chap.difficulty)}`}>
+                      <span>{chap.name}</span>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] uppercase border ${difficultyClasses(chap.difficulty)}`}>
                         {chap.difficulty}
                       </span>
                     </div>
-                    <div className="font-mono mt-2 flex items-center justify-between text-[10px] text-purple-300/70">
-                      <span>{chap.estimatedHours || 5} Hours</span>
-                      <span>Weightage: {chap.weightage || 10}%</span>
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </GlassCard>
         </div>
 
-        {/* Right Column: Selected Chapter Focus & Video Stream Launcher */}
+        {/* Right Column: Active Chapter & Topics */}
         <div className="space-y-6">
           {selectedChapter ? (
             <>
-              <GlassCard glowColor="emerald" className="p-6 border-emerald-500/30">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
+              {/* Chapter Card */}
+              <GlassCard glowColor="cyan" className="p-6 border-cyan-500/30">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <div className="font-mono text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+                    <span className="font-mono text-xs text-emerald-400 font-semibold uppercase">
                       {selectedExam?.name} • {selectedSubject?.name}
-                    </div>
-                    <h3 className="font-heading text-xl font-extrabold text-white text-gradient-cyan-emerald mt-1">
+                    </span>
+                    <h3 className="font-heading text-xl font-bold text-white mt-1">
                       {selectedChapter.name}
                     </h3>
                   </div>
-                  <span className={`self-start sm:self-auto rounded-full border px-3 py-1 text-xs uppercase font-mono font-bold ${difficultyClasses(selectedChapter.difficulty)}`}>
-                    {selectedChapter.difficulty}
-                  </span>
-                </div>
 
-                {/* External Video Search Launchers */}
-                <div className="mt-6 space-y-3">
-                  <div className="text-xs font-heading font-bold uppercase tracking-wider text-cyan-300">
-                    Curated Video Stream Sources
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {selectedExam && selectedSubject && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedExam && selectedSubject && selectedChapter && (
                       <>
                         <a
-                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "full lecture JEE NEET")}
+                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "full lecture")}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <NeonButton variant="solid" glowColor="cyan" className="w-full text-xs">
-                            <PlayCircle size={15} /> Search Full Lecture Streams
+                          <NeonButton variant="solid" glowColor="emerald" className="text-xs">
+                            <PlayCircle size={14} /> Watch Lectures
                           </NeonButton>
                         </a>
-
                         <a
-                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "one shot revision concept")}
+                          href={buildSearchUrl(selectedExam, selectedSubject, selectedChapter, "notes pdf")}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <NeonButton variant="outline" glowColor="emerald" className="w-full text-xs">
-                            <BookOpenText size={15} /> One-Shot Concept Revision
+                          <NeonButton variant="outline" glowColor="cyan" className="text-xs">
+                            <FileText size={14} /> View Notes
                           </NeonButton>
                         </a>
                       </>
@@ -339,84 +380,40 @@ export default function LearnPage() {
                 </div>
               </GlassCard>
 
-              {/* Sub-topics breakdown */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <GlassCard glowColor="emerald" className="p-5 border-emerald-500/25">
-                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-emerald-400 mb-4">
-                    <FileText size={16} /> Syllabus Coverage
-                  </div>
-                  <div className="space-y-2">
-                    {topics.slice(0, 4).map((t) => (
-                      <div key={t.slug} className="font-mono rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-2.5 text-xs text-emerald-200 truncate">
-                        {t.name}
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
+              {/* Topics Breakdown */}
+              <GlassCard glowColor="cyan" className="p-6 border-cyan-500/30">
+                <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-cyan-300 mb-4 flex items-center gap-2">
+                  <Target size={16} /> Topics & Key Concepts ({topics.length})
+                </h4>
 
-                <GlassCard glowColor="cyan" className="p-5 border-cyan-500/25">
-                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-cyan-300 mb-4">
-                    <Target size={16} /> Practice Protocol
-                  </div>
-                  <div className="space-y-2">
-                    {topics.slice(0, 4).map((t, idx) => (
-                      <div key={t.slug} className="font-mono rounded-lg border border-cyan-500/20 bg-cyan-950/20 p-2.5 text-xs text-cyan-200">
-                        Set {idx + 1}: {t.name} • {t.estimatedMinutes || 30}m
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
-
-                <GlassCard glowColor="purple" className="p-5 border-purple-500/25">
-                  <div className="flex items-center gap-2 text-xs font-heading font-bold uppercase tracking-wider text-purple-300 mb-4">
-                    <Layers3 size={16} /> Focus Priority
-                  </div>
-                  <div className="space-y-2">
-                    {topics
-                      .slice()
-                      .sort((a, b) => (b.weightage || 0) - (a.weightage || 0))
-                      .slice(0, 4)
-                      .map((t) => (
-                        <div key={`${t.slug}-priority`} className="font-mono rounded-lg border border-purple-500/20 bg-purple-950/20 p-2.5 text-xs text-purple-200">
-                          {t.name} • {t.weightage || 0}% weight
+                <div className="grid gap-3">
+                  {topics.map((t, idx) => (
+                    <div key={getId(t) || idx} className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-4 font-mono text-xs transition-all hover:border-cyan-400/40">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-bold text-white flex items-center gap-2">
+                          <CheckCircle2 size={14} className="text-emerald-400" /> {t.name}
                         </div>
-                      ))}
-                  </div>
-                </GlassCard>
-              </div>
-
-              {/* Topic Detailed Roadmap */}
-              <GlassCard glowColor="purple" className="p-6 border-purple-500/25">
-                <div className="text-xs font-heading font-bold uppercase tracking-wider text-purple-300 mb-4">
-                  Detailed Topic Breakdown
-                </div>
-                <div className="space-y-3">
-                  {topics.map((t) => (
-                    <div key={t.slug} className="rounded-lg border border-purple-500/20 bg-purple-950/20 p-4 transition-all hover:border-purple-400/40">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <div className="text-sm font-semibold text-white">{t.name}</div>
-                          <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px] text-purple-300/70">
-                            <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5">
-                              {t.estimatedMinutes || 30} mins
-                            </span>
-                            <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
-                              {t.weightage || 0}% focus
-                            </span>
-                          </div>
-                        </div>
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-mono font-bold self-start sm:self-center ${difficultyClasses(t.difficulty)}`}>
+                        <span className={`rounded px-2 py-0.5 text-[10px] uppercase border ${difficultyClasses(t.difficulty)}`}>
                           {t.difficulty}
                         </span>
                       </div>
+                      <div className="text-[11px] text-purple-300/70">
+                        Estimated: {t.estimatedMinutes || 30} mins • Weightage: {t.weightage || 20}%
+                      </div>
                     </div>
                   ))}
+
+                  {topics.length === 0 && (
+                    <div className="font-mono text-center text-xs text-purple-300/70 py-6 border border-dashed border-purple-500/20 rounded-lg">
+                      No topic breakdown registered for this chapter.
+                    </div>
+                  )}
                 </div>
               </GlassCard>
             </>
           ) : (
-            <GlassCard className="p-6 text-center text-sm text-purple-300">
-              Select a chapter from the left menu to view learning topics and resources.
+            <GlassCard className="p-8 text-center text-xs font-mono text-purple-300/70 border-cyan-500/20">
+              Select an exam, subject, and chapter to open the interactive syllabus map.
             </GlassCard>
           )}
         </div>

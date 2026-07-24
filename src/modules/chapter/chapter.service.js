@@ -15,6 +15,8 @@ const AppError = require('../../shared/errors/AppError');
 const ChapterRepository = require('./chapter.repository');
 const SubjectRepository = require('../subject/subject.repository');
 const ExamRepository = require('../exam/exam.repository');
+const Subject = require('../subject/subject.model');
+const Chapter = require('./chapter.model');
 const CHAPTER_SEEDS = require('./chapter.seeds');
 
 class ChapterService {
@@ -28,46 +30,56 @@ class ChapterService {
    * @returns {Promise<{ seeded: boolean, count: number }>}
    */
   static async seedChapters() {
-    const hasChapters = await ChapterRepository.hasAny();
-    if (hasChapters) {
-      return { seeded: false, count: 0 };
-    }
+    let seededCount = 0;
 
-    const allChapters = [];
-
+    // 1. Seed explicit chapters from CHAPTER_SEEDS
     for (const [key, chapters] of Object.entries(CHAPTER_SEEDS)) {
       const [examSlug, subjectSlug] = key.split('/');
 
-      // Resolve exam
       const exam = await ExamRepository.findBySlug(examSlug);
-      if (!exam) {
-        console.warn(`[StudyOS] Seed warning: exam "${examSlug}" not found, skipping`);
-        continue;
-      }
+      if (!exam) continue;
 
-      // Resolve subject within exam
       const subject = await SubjectRepository.findByExamAndSlug(exam._id, subjectSlug);
-      if (!subject) {
-        console.warn(`[StudyOS] Seed warning: subject "${subjectSlug}" not found under "${examSlug}", skipping`);
-        continue;
-      }
+      if (!subject) continue;
 
       for (const ch of chapters) {
-        allChapters.push({
-          ...ch,
-          subjectId: subject._id,
-          examId: exam._id,
-        });
+        const existing = await ChapterRepository.findBySubjectAndSlug(subject._id, ch.slug);
+        if (!existing) {
+          await ChapterRepository.create({
+            ...ch,
+            subjectId: subject._id,
+            examId: exam._id,
+          });
+          seededCount++;
+        }
       }
     }
 
-    if (allChapters.length === 0) {
-      return { seeded: false, count: 0 };
+    // 2. Fallback generator: Ensure EVERY subject has at least 4 chapters
+    const allSubjects = await Subject.find({}).exec();
+    for (const sub of allSubjects) {
+      const existingCount = await ChapterRepository.countBySubjectId(sub._id);
+      if (existingCount === 0) {
+        const defaultChapters = [
+          { name: `Fundamentals of ${sub.name}`, slug: `fundamentals-${sub.slug}`, difficulty: 'easy', weightage: 25, estimatedHours: 8, sortOrder: 1 },
+          { name: `Core Concepts & Principles`, slug: `core-concepts-${sub.slug}`, difficulty: 'medium', weightage: 25, estimatedHours: 10, sortOrder: 2 },
+          { name: `Advanced Problem Solving`, slug: `advanced-problems-${sub.slug}`, difficulty: 'hard', weightage: 25, estimatedHours: 12, sortOrder: 3 },
+          { name: `PYQ & Full Revision`, slug: `pyq-revision-${sub.slug}`, difficulty: 'medium', weightage: 25, estimatedHours: 10, sortOrder: 4 },
+        ];
+        for (const ch of defaultChapters) {
+          await ChapterRepository.create({
+            ...ch,
+            subjectId: sub._id,
+            examId: sub.examId,
+          });
+          seededCount++;
+        }
+      }
     }
 
-    const created = await ChapterRepository.bulkCreate(allChapters);
-    console.log(`[StudyOS] Seeded ${created.length} chapters`);
-    return { seeded: true, count: created.length };
+    const totalCount = await Chapter.countDocuments();
+    console.log(`[StudyOS] Chapter Matrix ready: ${totalCount} active chapters (${seededCount} newly seeded)`);
+    return { seeded: seededCount > 0, count: totalCount };
   }
 
   // ───────────────────────────────────────────────────────────────────────────────

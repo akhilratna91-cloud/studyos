@@ -161,7 +161,7 @@ export default function DashboardHome() {
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={16} className="text-emerald-400" />
                   <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400 font-semibold">
-                    AI Flow OS v1.0.1
+                    AI Flow OS v1.0.2 Matrix
                   </span>
                 </div>
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-white text-gradient-emerald-purple">
