@@ -24,12 +24,12 @@
 - [x] `calendar/page.tsx` — Daily check-in
 - [x] `profile/page.tsx` — Authentication & scholar profile
 
-## Phase 4: Version 1.0.2 Exam Matrix & Data Engine Expansion (IN PROGRESS)
-- [ ] Expand backend seed definitions (`exam.seeds.js`, `subject.seeds.js`, `chapter.seeds.js`, `topic.seeds.js`, `question.seeds.js`) to cover 50+ national, state, government, banking, law, management, graduate, and school board exams.
-- [ ] Upgrade backend seed logic (`exam.service.js`, `subject.service.js`, etc.) to perform idempotent upserts so new exams sync into existing databases without errors.
-- [ ] Update frontend UI pages (`learn`, `planner`, `quiz`, `pyq`, `profile`) to support category filters and instant search across all 50+ exams.
-- [ ] Update version labels to `v1.0.2` in `topbar.tsx`, `sidebar.tsx`, `layout.tsx`, and `globals.css`.
-- [ ] Run backend unit tests (`npm test`), frontend typecheck (`npx tsc --noEmit`), and frontend build (`npm run frontend:build`).
-- [ ] Rebuild Docker stack (`docker compose up --build -d`) and run integration smoke tests (`npm run smoke:test`).
-- [ ] Capture visual preview screenshots with `browser_subagent`.
-- [ ] Commit, tag `v1.0.2`, and push to GitHub remote repository.
+## Phase 4: Version 1.0.2 Exam Matrix & Data Engine Expansion (COMPLETE)
+- [x] Expand backend seed definitions (`exam.seeds.js`, `subject.seeds.js`, `chapter.seeds.js`, `topic.seeds.js`, `question.seeds.js`) to cover 50+ national, state, government, banking, law, management, graduate, and school board exams.
+- [x] Upgrade backend seed logic (`exam.service.js`, `subject.service.js`, etc.) to perform idempotent upserts so new exams sync into existing databases without errors.
+- [x] Update frontend UI pages (`learn`, `planner`, `quiz`, `pyq`, `profile`) to support category filters and instant search across all 50+ exams.
+- [x] Update version labels to `v1.0.2` in `topbar.tsx`, `sidebar.tsx`, `layout.tsx`, and `globals.css`.
+- [x] Run backend unit tests (`npm test`), frontend typecheck (`npx tsc --noEmit`), and frontend build (`npm run frontend:build`).
+- [x] Rebuild Docker stack (`docker compose up --build -d`) and run integration smoke tests (`npm run smoke:test`).
+- [x] Capture visual preview screenshots with `browser_subagent`.
+- [x] Commit, tag `v1.0.2`, and push to GitHub remote repository.
