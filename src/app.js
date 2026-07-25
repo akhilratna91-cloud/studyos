@@ -124,7 +124,7 @@ app.get('/test-all', async (req, res) => {
       'StudyPlan', 'DailyTask', 'Revision', 'Adaptive', 'Today', 'Progress',
       'Analytics', 'Focus', 'ChapterProgress', 'Gamification', 'SubjectProgress',
       'StudyTime', 'Question', 'Quiz', 'Evaluation', 'ResultAnalysis',
-      'SimpleAnalytics', 'SimpleAI', 'SimpleGamification', 'Extra'
+      'SimpleAnalytics', 'SimpleAI', 'SimpleGamification', 'Extra', 'Lectures'
     ];
 
     res.status(200).json({
@@ -132,7 +132,7 @@ app.get('/test-all', async (req, res) => {
       database: dbStatus,
       modulesCount: modulesLoaded.length,
       modules: modulesLoaded,
-      message: 'All 27 modules successfully registered & database is responsive',
+      message: `All ${modulesLoaded.length} modules successfully registered & database is responsive`,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -148,6 +148,8 @@ app.get('/api/v1/health', (_req, res) => {
     environment: config.env,
   });
 });
+
+const lecturesRoutes = require('./modules/lectures/lectures.routes');
 
 // ─── Mount Module Routes ────────────────────────────────────────────────────────
 app.use('/api/v1/auth', authRoutes);         // Authentication
@@ -175,9 +177,23 @@ app.use('/api/v1/evaluation', evaluationRoutes);               // Stateless answ
 app.use('/api/v1/result-analysis', resultAnalysisRoutes);      // Quiz result analytics
 app.use('/api/v1/simple-analytics', simpleAnalyticsRoutes);    // Basic analytics (accuracy, progress)
 app.use('/api/v1/ai', simpleAiRoutes);                         // Basic logic-based AI
+app.use('/api/v1/simple-ai', simpleAiRoutes);                  // AI study coach copilot
 app.use('/api/v1/simple-gamification', simpleGamificationRoutes); // Basic explicit XP & Streak module
+app.use('/api/v1/lectures', lecturesRoutes);                   // Curated video lectures
 app.use('/api/v1', extraRoutes);                               // Utility routes (calendar, notifications, sessions)
 app.use('/api/v1/notes', notesRoutes);                         // User notes
+
+// ─── FastAPI & Root Route Alias Compatibility ────────────────────────────────────
+app.use('/auth', authRoutes);
+app.use('/dashboard', todayRoutes);
+app.use('/content/exams', examRoutes);
+app.use('/content/curriculum', examRoutes);
+app.use('/plans', studyPlanRoutes);
+app.use('/analytics', analyticsRoutes);
+app.use('/sessions', focusRoutes);
+app.use('/quiz', quizRoutes);
+app.use('/lectures', lecturesRoutes);
+app.use('/ai', simpleAiRoutes);
 
 // ─── 404 Handler ────────────────────────────────────────────────────────────────
 app.use((req, res) => {

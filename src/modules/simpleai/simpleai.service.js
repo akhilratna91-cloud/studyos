@@ -135,6 +135,44 @@ class SimpleAIService {
     };
   }
 
+  /**
+   * 4. chatWithAI
+   * Intelligent study copilot chat responses grounded in performance analytics and RAG principles.
+   */
+  static async chatWithAI(userId, message, context = {}) {
+    const analytics = await SimpleAnalyticsService.getFullAnalytics(userId);
+    const msgLow = message.toLowerCase();
+
+    let reply = "";
+    let suggestedActions = [];
+
+    if (msgLow.includes("plan") || msgLow.includes("schedule") || msgLow.includes("routine")) {
+      reply = `Based on your overall progress (${analytics.progress}%), I recommend following a 4-hour daily commitment. Break it into two 90-minute core study blocks and one 60-minute PYQ revision session.`;
+      suggestedActions = ["View Daily Planner", "Generate 90-Day Plan"];
+    } else if (msgLow.includes("weak") || msgLow.includes("doubt") || msgLow.includes("difficult")) {
+      const weakList = analytics.weakChapters.length > 0 ? analytics.weakChapters.join(", ") : "no critical areas";
+      reply = `Targeting weak spots is key! Currently, your target focus areas are: ${weakList}. Dedicate 25 minutes of deep focus to your weakest topic today.`;
+      suggestedActions = ["Take Topic Quiz", "View Analytics Matrix"];
+    } else if (msgLow.includes("quiz") || msgLow.includes("pyq") || msgLow.includes("test")) {
+      reply = `Your current accuracy across quiz attempts is ${analytics.accuracy}%. Taking a 10-question practice quiz today will boost your discipline score and reinforce active recall!`;
+      suggestedActions = ["Start 10-Q Practice Quiz", "Browse PYQ Vault"];
+    } else {
+      reply = `Great question! Consistency compounds faster than intensity. Keep pushing forward—every completed task unlocks XP and builds exam readiness. How can I help optimize your study flow right now?`;
+      suggestedActions = ["Ask about Study Plan", "Check Weak Chapters", "Get Motivation"];
+    }
+
+    return {
+      message,
+      reply,
+      suggestedActions,
+      analyticsSummary: {
+        accuracy: analytics.accuracy,
+        progress: analytics.progress,
+        isBurnoutRisk: analytics.burnout?.isBurnoutRisk || false,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
 }
 
 module.exports = SimpleAIService;

@@ -14,5 +14,7 @@ router.use(protect);
 router.get('/recommend/:userId', ctrl.recommend);
 router.get('/weak/:userId', ctrl.weakAdvice);
 router.get('/motivate', ctrl.motivate);
+router.post('/chat', ctrl.chat);
+router.post('/', ctrl.chat);
 
 module.exports = router;

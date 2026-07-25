@@ -37,4 +37,16 @@ const motivate = asyncHandler(async (req, res) => {
   res.status(200).json(data);
 });
 
-module.exports = { recommend, weakAdvice, motivate };
+/**
+ * @route   POST /api/v1/simple-ai/chat
+ * @desc    Chat with AI Study Copilot
+ */
+const chat = asyncHandler(async (req, res) => {
+  const userId = req.user ? req.user._id : 'guest';
+  const { message = '', context = {} } = req.body || {};
+  
+  const data = await SimpleAIService.chatWithAI(userId, message, context);
+  res.status(200).json({ success: true, data });
+});
+
+module.exports = { recommend, weakAdvice, motivate, chat };
